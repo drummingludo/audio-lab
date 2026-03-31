@@ -245,6 +245,11 @@ select{background:var(--bg3);border:1px solid var(--border);color:var(--text);pa
           <span style="font-size:9px;color:var(--muted)">Drag=Freq+Gain · Shift+Drag=Q</span>
         </div>
         <canvas id="eq-cv" class="vc" height="170" style="cursor:default"></canvas>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
+          <div class="st" style="margin-bottom:0">Spectrogramme</div>
+          <button class="cvb on" id="spec-toggle-btn" onclick="toggleSpectrogram()">On</button>
+        </div>
+        <canvas id="eq-spec" class="vc" height="90" style="margin-top:4px"></canvas>
         <div class="eqgrid" id="eq-strips"></div>
       </div>
     </div>
@@ -1166,24 +1171,41 @@ function animSig() {
   const W = cv.width = cv.offsetWidth || 300, H = 120; const c = cv.getContext('2d');
   c.fillStyle = 'rgba(8,14,24,.82)'; c.fillRect(0, 0, W, H);
   c.strokeStyle = '#1e3048'; c.lineWidth = .5; c.beginPath(); c.moveTo(0, H/2); c.lineTo(W, H/2); c.stroke();
-  c.strokeStyle = '#E5A84E'; c.lineWidth = 1.8; c.beginPath();
   if (sigAnal) {
-    // Vraie forme d'onde depuis l'AnalyserNode
     const td = new Float32Array(sigAnal.fftSize);
     sigAnal.getFloatTimeDomainData(td);
-    const step = Math.ceil(td.length / W);
+    // Trigger: cherche le premier passage montant par zéro pour affichage stable
+    let trig = 0;
+    const half = Math.floor(td.length * 0.5);
+    for (let i = 1; i < half; i++) {
+      if (td[i - 1] < 0 && td[i] >= 0) { trig = i; break; }
+    }
+    // Grille horizontale
+    c.strokeStyle = '#0f1c2c'; c.lineWidth = 0.5;
+    [H*0.25, H*0.5, H*0.75].forEach(gy => {
+      c.beginPath(); c.moveTo(0, gy); c.lineTo(W, gy); c.stroke();
+    });
+    // Forme d'onde réelle
+    const samples = Math.min(td.length - trig, W * 2);
+    const step = samples / W;
+    c.shadowColor = '#E5A84E'; c.shadowBlur = 4;
+    c.strokeStyle = '#E5A84E'; c.lineWidth = 1.8; c.beginPath();
     for (let i = 0; i < W; i++) {
-      const y = H / 2 - (td[i * step] || 0) * H * .45;
+      const v = td[trig + Math.floor(i * step)] || 0;
+      const y = H / 2 - v * H * 0.42;
       i === 0 ? c.moveTo(i, y) : c.lineTo(i, y);
     }
+    c.stroke(); c.shadowBlur = 0;
   } else {
     // Fallback statique si pas d'analyser
+    c.strokeStyle = '#E5A84E'; c.lineWidth = 1.8; c.beginPath();
     for (let i = 0; i < W; i++) {
       const y = H / 2;
       i === 0 ? c.moveTo(i, y) : c.lineTo(i, y);
     }
+    c.stroke();
   }
-  c.stroke(); sigRaf = requestAnimationFrame(animSig);
+  sigRaf = requestAnimationFrame(animSig);
 }
 
 // ── EQ ─────────────────────────────────────────────────────────────────────
@@ -1251,9 +1273,75 @@ function eqDB(b, f) {
 function eqPhase(b, f) {
   if (!b.on) return 0;
   if (b.type === 'bell') return -Math.atan2(b.q*(b.f/f - f/b.f), 1) * b.g / 14;
-  if (b.type === 'hpf') return (Math.PI/2 - Math.atan2(f/b.f, 1)) * ((b.oct||12)/12);
-  if (b.type === 'lpf') return -Math.atan2(f/b.f, 1) * ((b.oct||12)/12);
+  if (b.type === 'hpf') return (Math.PI/2 - Math.atan2(f/b.f, 1)) * ((b.oct||12)/6);
+  if (b.type === 'lpf') return -Math.atan2(f/b.f, 1) * ((b.oct||12)/6);
   return 0;
+}
+
+// ── EQ Spectrogram ─────────────────────────────────────────────────────────
+let showSpec = true, specImgData = null, specRaf = null;
+function toggleSpectrogram() {
+  showSpec = !showSpec;
+  document.getElementById('spec-toggle-btn').classList.toggle('on', showSpec);
+  if (!showSpec) {
+    const cv = document.getElementById('eq-spec'); if (!cv) return;
+    const ctx = cv.getContext('2d'); ctx.clearRect(0, 0, cv.width, cv.height);
+    specImgData = null;
+  }
+}
+function specColor(v) {
+  // Black→Blue→Cyan→Green→Yellow→Red
+  if (v < 0.2) { const t=v/0.2; return [0, 0, Math.floor(t*200)]; }
+  if (v < 0.4) { const t=(v-0.2)/0.2; return [0, Math.floor(t*220), Math.floor(200+t*55)]; }
+  if (v < 0.6) { const t=(v-0.4)/0.2; return [Math.floor(t*60), Math.floor(220+t*35), Math.floor(255-t*200)]; }
+  if (v < 0.8) { const t=(v-0.6)/0.2; return [Math.floor(60+t*195), 255, Math.floor(55-t*55)]; }
+  const t=(v-0.8)/0.2; return [255, Math.floor(255-t*200), 0];
+}
+function drawSpectrogram() {
+  if (!showSpec) return;
+  const cv = document.getElementById('eq-spec'); if (!cv) return;
+  const p = PLR.eq;
+  const W = cv.offsetWidth || 700, H = 90;
+  if (cv.width !== W) { cv.width = W; specImgData = null; }
+  cv.height = H;
+  const ctx = cv.getContext('2d');
+  if (!p || !p.playing || !p.anal) {
+    if (!specImgData) { ctx.fillStyle='#060c16'; ctx.fillRect(0,0,W,H); }
+    return;
+  }
+  // Scroll gauche d'1px
+  if (specImgData) { ctx.putImageData(specImgData, -1, 0); }
+  else { ctx.fillStyle='#060c16'; ctx.fillRect(0,0,W,H); }
+  // Nouvelle colonne
+  const fData = new Uint8Array(p.anal.frequencyBinCount);
+  p.anal.getByteFrequencyData(fData);
+  const imgCol = ctx.createImageData(1, H);
+  const d = imgCol.data;
+  for (let y = 0; y < H; y++) {
+    const frac = 1 - y / H;
+    const freq = 20 * Math.pow(1000, frac);
+    const nyq = (AC?.sampleRate || 44100) / 2;
+    const bin = Math.min(Math.floor(freq / nyq * fData.length), fData.length - 1);
+    const v = fData[bin] / 255;
+    const [r,g,b] = specColor(v);
+    const idx = y * 4; d[idx]=r; d[idx+1]=g; d[idx+2]=b; d[idx+3]=255;
+  }
+  ctx.putImageData(imgCol, W - 1, 0);
+  // Sauvegarde avant overlay
+  specImgData = ctx.getImageData(0, 0, W, H);
+  // Overlay: lignes de fréquence (non sauvegardées, donc fixes)
+  const nyq = (AC?.sampleRate || 44100) / 2;
+  ctx.setLineDash([2, 8]); ctx.lineWidth = 0.6;
+  [100, 500, 1000, 4000, 10000].forEach(f => {
+    if (f >= nyq) return;
+    const frac = Math.log10(f/20) / 3;
+    const y = Math.round((1 - frac) * H);
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+    ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke();
+    ctx.fillStyle='rgba(255,255,255,0.35)'; ctx.font='7px Space Mono'; ctx.textAlign='left';
+    ctx.fillText(f>=1000?(f/1000)+'k':f+'Hz', 2, y-1);
+  });
+  ctx.setLineDash([]);
 }
 
 let eqRaf = null;
@@ -1322,12 +1410,19 @@ function drawEQ() {
   };
   cv.onmouseup = () => { eqDrag = -1; };
   const p = PLR.eq;
+  drawSpectrogram();
   if (p && p.playing) eqRaf = requestAnimationFrame(drawEQ);
 }
 buildEQStrips();
 
 // ── Comp ───────────────────────────────────────────────────────────────────
 let cThr=-20, cRat=4, cKn=6, cAtk=10, cRel=100, cMk=3;
+function calcGR(dbIn) {
+  const ex = dbIn - cThr, hk = cKn / 2;
+  if (ex < -hk) return 0;
+  if (ex < hk) { const t = (ex + hk) / cKn; return t * t * (1 - 1/cRat) * cKn / 2; }
+  return ex * (1 - 1/cRat);
+}
 let cView='tr', cAMode='s', cActIn=[], cActOut=[], cActGR=[];
 function setC(p,v){
   if(p==='thr'){cThr=+v;document.getElementById('c-thr').textContent=v+' dB';}
@@ -1344,7 +1439,7 @@ let compRaf=null;
 function drawComp(){
   cancelAnimationFrame(compRaf);
   const cv=document.getElementById('comp-cv');if(!cv)return;
-  const S=Math.min(cv.parentElement?.offsetWidth||220,240);cv.width=S;cv.height=S;
+  const S=Math.min(cv.parentElement?.offsetWidth||176,192);cv.width=S;cv.height=S;
   const ctx=cv.getContext('2d');ctx.clearRect(0,0,S,S);ctx.fillStyle='#060c16';ctx.fillRect(0,0,S,S);
   const hasSig=PLR.comp?.playing;
   if(cView==='tr'){drawCompTransfer(ctx,S,S,hasSig);if(hasSig)compRaf=requestAnimationFrame(drawComp);}
@@ -1387,19 +1482,90 @@ function drawCompMinimal(ctx,W,H){
 }
 const ACT_SEC=5;
 function drawCompActivity(ctx,W,H){
-  const N=Math.floor(60*ACT_SEC);const now=Date.now()/1000;
-  const sig=.3+Math.sin(now*2.3)*.2+Math.random()*.07;
-  const gr=sig>(-cThr/60)?Math.min(.4,(sig-(-cThr/60))*cRat*.25):0;
-  cActIn.push(sig);cActOut.push(sig-gr);cActGR.push(gr);
+  // Ableton-like: GR (haut, orange descendant), Signal In/Out (bas, dBFS, 0dBFS en haut)
+  const N=W;
+  // Lecture audio réelle si disponible
+  const hasSig=PLR.comp?.playing;
+  let dbIn=-80;
+  if(hasSig&&PLR.comp?.anal){
+    const td=new Float32Array(PLR.comp.anal.fftSize);
+    PLR.comp.anal.getFloatTimeDomainData(td);
+    let rms=0;for(let i=0;i<td.length;i++)rms+=td[i]*td[i];
+    rms=Math.sqrt(rms/td.length);
+    dbIn=rms>0.0001?20*Math.log10(rms):-80;
+  } else {
+    const t=Date.now()/1000;
+    dbIn=-18+Math.sin(t*2.3)*10+Math.random()*3-3;
+  }
+  const gr=calcGR(dbIn);
+  const dbOut=dbIn-gr+cMk;
+  cActIn.push(dbIn);cActOut.push(dbOut);cActGR.push(gr);
   if(cActIn.length>N){cActIn.shift();cActOut.shift();cActGR.shift();}
-  const gH=30,mH=H-gH-6;
-  ctx.fillStyle='#0b1828';ctx.fillRect(0,0,W,gH);ctx.fillStyle='#0a1624';ctx.fillRect(0,gH+3,W,mH);
-  ctx.strokeStyle='#C4893A';ctx.lineWidth=1;ctx.beginPath();cActGR.forEach((v,i)=>{const x=i/N*W,y=gH-(v/.5)*gH;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});ctx.stroke();
-  const ty=mH*(1-(-cThr+60)/80)+gH+3;ctx.strokeStyle='rgba(196,137,58,.5)';ctx.lineWidth=1;ctx.setLineDash([4,3]);ctx.beginPath();ctx.moveTo(0,ty);ctx.lineTo(W,ty);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='rgba(196,137,58,.6)';ctx.font='7px Space Mono';ctx.textAlign='left';ctx.fillText('T '+cThr+'dB',2,ty-2);
-  ctx.strokeStyle='rgba(170,200,230,.5)';ctx.lineWidth=1.5;ctx.beginPath();cActIn.forEach((v,i)=>{const x=i/N*W,y=gH+3+mH-v*mH*.88;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});ctx.stroke();
-  ctx.strokeStyle='rgba(200,140,50,.8)';ctx.lineWidth=1.5;ctx.beginPath();cActOut.forEach((v,i)=>{const x=i/N*W,y=gH+3+mH-v*mH*.88;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});ctx.stroke();
-  ctx.fillStyle='rgba(170,200,230,.7)';ctx.fillRect(4,gH+5,8,2);ctx.fillStyle='#9db8cc';ctx.font='7px Space Grotesk';ctx.textAlign='left';ctx.fillText('Before',14,gH+9);
-  ctx.fillStyle='rgba(200,140,50,.8)';ctx.fillRect(4,gH+15,8,2);ctx.fillStyle='#9db8cc';ctx.fillText('After',14,gH+19);
+
+  // Layout
+  const grH=Math.floor(H*0.28), sigY=grH+3, sigH=H-grH-3;
+  const dbRange=60; // 0 à -60 dBFS
+  const grRange=24; // 0 à -24 dB GR
+  const dToY=db=>sigY+sigH*(1-Math.max(0,Math.min(1,(db+dbRange)/dbRange)));
+  const grToY=g=>grH*Math.min(1,g/grRange);
+
+  // Fond
+  ctx.fillStyle='#08121e';ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#060e1a';ctx.fillRect(0,0,W,grH);
+  ctx.fillStyle='#070c18';ctx.fillRect(0,sigY,W,sigH);
+
+  // Grille signal (dBFS)
+  ctx.lineWidth=0.5;
+  [-6,-12,-18,-24,-36,-48].forEach(db=>{
+    const y=dToY(db);
+    ctx.strokeStyle='#0d1c2e';ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();
+    ctx.fillStyle='#2a4060';ctx.font='7px Space Mono';ctx.textAlign='left';ctx.fillText(db,2,y-1);
+  });
+  // Grille GR
+  [6,12,18].forEach(g=>{
+    const y=grToY(g);if(y>=grH)return;
+    ctx.strokeStyle='#0d1c2e';ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();
+    ctx.fillStyle='#2a4060';ctx.font='7px Space Mono';ctx.textAlign='left';ctx.fillText('-'+g,2,y-1);
+  });
+  ctx.fillStyle='#2a4060';ctx.font='7px Space Grotesk';ctx.textAlign='right';
+  ctx.fillText('GR',W-2,grH-2);ctx.fillText('0dBFS',W-2,sigY+9);
+
+  // Séparateur
+  ctx.strokeStyle='#1e3048';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,grH+1);ctx.lineTo(W,grH+1);ctx.stroke();
+
+  // Spectre en arrière-plan (activité)
+  if(hasSig)drawSpectrum(ctx,W,H,'comp');
+
+  // Ligne de seuil
+  const ty=dToY(cThr);
+  ctx.strokeStyle='rgba(196,137,58,.7)';ctx.lineWidth=1;ctx.setLineDash([5,3]);
+  ctx.beginPath();ctx.moveTo(0,ty);ctx.lineTo(W,ty);ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle='rgba(196,137,58,.9)';ctx.font='7px Space Mono';ctx.textAlign='right';
+  ctx.fillText('T '+cThr+'dB',W-2,ty-2);
+
+  // Courbe GR (orange, descend du haut)
+  ctx.strokeStyle='#C4893A';ctx.lineWidth=1.5;ctx.beginPath();
+  cActGR.forEach((g,i)=>{const x=i/(N-1)*W,y=grToY(g);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+  ctx.stroke();
+  // Remplissage GR
+  ctx.fillStyle='rgba(196,137,58,.12)';ctx.beginPath();ctx.moveTo(0,0);
+  cActGR.forEach((g,i)=>{const x=i/(N-1)*W,y=grToY(g);ctx.lineTo(x,y);});
+  ctx.lineTo(W,0);ctx.closePath();ctx.fill();
+
+  // Signal In (gris-bleu clair)
+  ctx.strokeStyle='rgba(160,195,235,.7)';ctx.lineWidth=1.5;ctx.beginPath();
+  cActIn.forEach((db,i)=>{const x=i/(N-1)*W,y=dToY(db);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+  ctx.stroke();
+  // Signal Out (orange)
+  ctx.strokeStyle='rgba(220,150,60,.9)';ctx.lineWidth=1.5;ctx.beginPath();
+  cActOut.forEach((db,i)=>{const x=i/(N-1)*W,y=dToY(db);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+  ctx.stroke();
+
+  // Légende
+  ctx.fillStyle='rgba(160,195,235,.8)';ctx.fillRect(4,sigY+5,8,2);
+  ctx.fillStyle='#8ab0cc';ctx.font='7px Space Grotesk';ctx.textAlign='left';ctx.fillText('In',14,sigY+9);
+  ctx.fillStyle='rgba(220,150,60,.9)';ctx.fillRect(4,sigY+15,8,2);
+  ctx.fillStyle='#8ab0cc';ctx.fillText('Out',14,sigY+19);
 }
 setInterval(()=>{if(cView==='mn'&&document.getElementById('t-comp')?.classList.contains('on'))drawComp();},70);
 
@@ -1411,7 +1577,7 @@ let gateRaf=null;
 function drawGate(){
   cancelAnimationFrame(gateRaf);
   const cv=document.getElementById('gate-cv');if(!cv)return;
-  const S=Math.min(cv.parentElement?.offsetWidth||220,240);cv.width=S;cv.height=S;
+  const S=Math.min(cv.parentElement?.offsetWidth||176,192);cv.width=S;cv.height=S;
   const ctx=cv.getContext('2d');ctx.clearRect(0,0,S,S);ctx.fillStyle='#060c16';ctx.fillRect(0,0,S,S);
   const hasSig=PLR.gate?.playing;
   if(gView==='tr'){
@@ -1434,12 +1600,60 @@ function drawGate(){
     ctx.beginPath();ctx.arc(S/2,S-22,5,0,Math.PI*2);ctx.fillStyle=open?'#3fc87a':'#d04040';ctx.fill();
     if(hasSig)setTimeout(drawGate,60);
   } else {
-    const N=Math.floor(60*ACT_SEC);const now=Date.now()/1000;const sig=.3+Math.sin(now*3.1)*.25+Math.random()*.06;const open=sig>(-gThr/80);
-    gActIn.push(sig);gActOut.push(open?sig:sig*Math.pow(10,-gRng/80));
+    // Activité Gate — style Ableton (dBFS, 0dBFS en haut)
+    const N=S;
+    const hasSigG=PLR.gate?.playing;
+    let dbInG=-80;
+    if(hasSigG&&PLR.gate?.anal){
+      const td=new Float32Array(PLR.gate.anal.fftSize);
+      PLR.gate.anal.getFloatTimeDomainData(td);
+      let rms=0;for(let i=0;i<td.length;i++)rms+=td[i]*td[i];
+      rms=Math.sqrt(rms/td.length);
+      dbInG=rms>0.0001?20*Math.log10(rms):-80;
+    } else {
+      const t=Date.now()/1000;
+      dbInG=-22+Math.sin(t*3.1)*12+Math.random()*4-2;
+    }
+    const openG=dbInG>gThr;
+    const dbOutG=openG?dbInG:dbInG-gRng;
+    gActIn.push(dbInG);gActOut.push(dbOutG);
     if(gActIn.length>N){gActIn.shift();gActOut.shift();}
-    const ty=S*(1-(-gThr/80));ctx.strokeStyle='rgba(63,200,122,.4)';ctx.lineWidth=1;ctx.setLineDash([4,3]);ctx.beginPath();ctx.moveTo(0,ty);ctx.lineTo(S,ty);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='rgba(63,200,122,.6)';ctx.font='7px Space Mono';ctx.textAlign='left';ctx.fillText('T '+gThr+'dB',2,ty-2);
-    ctx.strokeStyle='rgba(170,200,230,.5)';ctx.lineWidth=1.5;ctx.beginPath();gActIn.forEach((v,i)=>{const x=i/N*S,y=S-v*S*.88;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});ctx.stroke();
-    ctx.strokeStyle='rgba(63,200,122,.8)';ctx.lineWidth=1.5;ctx.beginPath();gActOut.forEach((v,i)=>{const x=i/N*S,y=S-v*S*.88;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});ctx.stroke();
+    const dbRangeG=60;
+    const dToYG=db=>S*Math.max(0,Math.min(1,1-(db+dbRangeG)/dbRangeG));
+    // Fond
+    ctx.fillStyle='#07121e';ctx.fillRect(0,0,S,S);
+    // Grille dBFS
+    ctx.lineWidth=0.5;
+    [-6,-12,-18,-24,-36,-48].forEach(db=>{
+      const y=dToYG(db);
+      ctx.strokeStyle='#0d1c2e';ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(S,y);ctx.stroke();
+      ctx.fillStyle='#2a4060';ctx.font='7px Space Mono';ctx.textAlign='left';ctx.fillText(db,2,y-1);
+    });
+    ctx.fillStyle='#2a4060';ctx.font='7px Space Grotesk';ctx.textAlign='right';ctx.fillText('0dBFS',S-2,8);
+    // Spectre
+    if(hasSigG)drawSpectrum(ctx,S,S,'gate');
+    // Seuil
+    const tyG=dToYG(gThr);
+    ctx.strokeStyle='rgba(63,200,122,.7)';ctx.lineWidth=1;ctx.setLineDash([5,3]);
+    ctx.beginPath();ctx.moveTo(0,tyG);ctx.lineTo(S,tyG);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle='rgba(63,200,122,.9)';ctx.font='7px Space Mono';ctx.textAlign='right';
+    ctx.fillText('T '+gThr+'dB',S-2,tyG-2);
+    // Indicateur ouvert/fermé
+    ctx.beginPath();ctx.arc(S/2,S-14,5,0,Math.PI*2);
+    ctx.fillStyle=openG?'#3fc87a':'#d04040';ctx.fill();
+    // Signal In (gris-bleu)
+    ctx.strokeStyle='rgba(160,195,235,.7)';ctx.lineWidth=1.5;ctx.beginPath();
+    gActIn.forEach((db,i)=>{const x=i/(N-1)*S,y=dToYG(db);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+    ctx.stroke();
+    // Signal Out (vert)
+    ctx.strokeStyle='rgba(63,200,122,.9)';ctx.lineWidth=1.5;ctx.beginPath();
+    gActOut.forEach((db,i)=>{const x=i/(N-1)*S,y=dToYG(db);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+    ctx.stroke();
+    // Légende
+    ctx.fillStyle='rgba(160,195,235,.8)';ctx.fillRect(4,5,8,2);
+    ctx.fillStyle='#8ab0cc';ctx.font='7px Space Grotesk';ctx.textAlign='left';ctx.fillText('In',14,9);
+    ctx.fillStyle='rgba(63,200,122,.9)';ctx.fillRect(4,15,8,2);
+    ctx.fillStyle='#8ab0cc';ctx.fillText('Out',14,19);
     requestAnimationFrame(()=>{if(gView==='ac'&&document.getElementById('t-gate')?.classList.contains('on'))drawGate();});
   }
 }
@@ -1978,6 +2192,7 @@ window.addEventListener('DOMContentLoaded', () => {
     drawLFO();
     drawTunerBar(0, true);
     drawChord();
+    drawSpectrogram();
   }, 100);
 });
 </script>
