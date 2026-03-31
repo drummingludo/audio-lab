@@ -913,6 +913,8 @@ function _play(id) {
   p.src = src; p.t0 = c.currentTime; p.playing = true;
   src.onended = () => { if (!p.loop) { p.playing = false; p.offset = 0; const b = document.getElementById('pp-' + id); if (b) b.textContent = '▶'; } };
   animTime(id);
+  // Relance les boucles de visualisation qui dépendent de p.playing
+  if (id === 'eq') { cancelAnimationFrame(eqRaf); drawEQ(); }
 }
 
 function rebuildChain(id) {
@@ -1560,8 +1562,8 @@ function vuBar(ctx,x,y,w,h,norm,grMode){
 // ── Vue Transfert ──────────────────────────────────────────────────────────
 function drawCT(ctx,W,H,m){
   const vuW=12,arW=8;
-  const lPad=6+vuW+arW+10; // thresh + flèche + marge
-  const rPad=10+vuW+6+vuW+arW+6; // GR + gap + Out + flèche + marge
+  const lPad=6+vuW+arW+10; // thresh + flèche droite + marge
+  const rPad=(arW+6)+vuW+6+vuW+arW+6; // flèche GR + GR + gap + Out + flèche Out + marge
   const pT=16,pB=15;
   const cX=lPad,cY=pT,cW=W-lPad-rPad,cH=H-pT-pB;
   // Zone courbe
@@ -1621,8 +1623,12 @@ function drawCT(ctx,W,H,m){
   ctx.fillStyle='#3a5870';ctx.font='8px Space Grotesk';ctx.textAlign='center';ctx.fillText('Thresh',tvX+vuW/2,cY-4);
   ctx.fillStyle='#6a90b0';ctx.font='7px Space Mono';ctx.textAlign='center';ctx.fillText(m.in.toFixed(1),tvX+vuW/2,cY+tvH+11);
   // ── VU GR (droite, premier) ──
-  const grX=W-rPad+10,grY=cY,grH2=cH;
-  vuBar(ctx,grX,grY,vuW,grH2,Math.min(1,m.gr/24),true);
+  const grX=W-rPad+(arW+6),grY=cY,grH2=cH;
+  const grNorm=Math.min(1,m.gr/24);
+  vuBar(ctx,grX,grY,vuW,grH2,grNorm,true);
+  // Flèche GR (pointe vers la gauche, indique le niveau de réduction)
+  const gay=Math.max(grY+4,Math.min(grY+grH2-4,grY+grNorm*grH2));
+  ctx.fillStyle='#7a5830';ctx.beginPath();ctx.moveTo(grX-1,gay-3.5);ctx.lineTo(grX-arW+1,gay);ctx.lineTo(grX-1,gay+3.5);ctx.closePath();ctx.fill();
   ctx.fillStyle='#3a5870';ctx.font='8px Space Grotesk';ctx.textAlign='center';ctx.fillText('GR',grX+vuW/2,grY-4);
   ctx.fillStyle='#6a90b0';ctx.font='7px Space Mono';ctx.textAlign='center';ctx.fillText('-'+m.gr.toFixed(1),grX+vuW/2,grY+grH2+11);
   // ── VU Out (droite, second) ──
@@ -1669,25 +1675,30 @@ function drawCA(ctx,W,H,m){
   // Conversion dBFS → hauteur visuelle (log, non-linéaire pour agrandissement 3x)
   // -60dBFS=0, -20dBFS=0.67, 0dBFS=1 — bien plus grand que linéaire
   const dbToV=db=>Math.max(0,Math.min(1,(Math.max(-60,db)+60)/60));
-  // Ligne de seuil ORANGE
   const tv=dbToV(cThr);
-  ctx.strokeStyle='rgba(196,137,58,.75)';ctx.lineWidth=1;ctx.setLineDash([6,4]);
-  ctx.beginPath();ctx.moveTo(0,mid-tv*amp);ctx.lineTo(W,mid-tv*amp);ctx.stroke();
-  ctx.strokeStyle='rgba(196,137,58,.3)';ctx.lineWidth=0.8;
-  ctx.beginPath();ctx.moveTo(0,mid+tv*amp);ctx.lineTo(W,mid+tv*amp);ctx.stroke();
-  ctx.setLineDash([]);
+  // Forme d'onde (dessinée EN PREMIER pour que le seuil soit AU-DESSUS)
   if(cActIn.length>1){
     const pts=cActIn.map(db=>dbToV(db));
-    ctx.beginPath();ctx.moveTo(0,mid);
+    // Fill symétrique sans ligne verticale parasite à x=0
+    ctx.beginPath();
+    ctx.moveTo(0,mid-pts[0]*amp);
     pts.forEach((v,i)=>ctx.lineTo(i/(N-1)*W,mid-v*amp));
-    ctx.lineTo(W-1,mid);
-    pts.slice().reverse().forEach((v,i)=>ctx.lineTo((1-i/(N-1))*W,mid+v*amp));
+    ctx.lineTo((pts.length-1)/(N-1)*W,mid+pts[pts.length-1]*amp);
+    pts.slice().reverse().forEach((v,i)=>ctx.lineTo((pts.length-1-i)/(N-1)*W,mid+v*amp));
     ctx.closePath();ctx.fillStyle='rgba(65,105,155,.28)';ctx.fill();
+    // Ligne supérieure
     ctx.beginPath();pts.forEach((v,i)=>i===0?ctx.moveTo(0,mid-v*amp):ctx.lineTo(i/(N-1)*W,mid-v*amp));
     ctx.strokeStyle='rgba(120,180,245,.5)';ctx.lineWidth=1.2;ctx.stroke();
+    // Ligne inférieure (miroir)
     ctx.beginPath();pts.forEach((v,i)=>i===0?ctx.moveTo(0,mid+v*amp):ctx.lineTo(i/(N-1)*W,mid+v*amp));
     ctx.strokeStyle='rgba(120,180,245,.22)';ctx.lineWidth=0.8;ctx.stroke();
   }
+  // Ligne de seuil ORANGE — dessinée APRÈS la forme d'onde (visible par-dessus)
+  ctx.strokeStyle='rgba(196,137,58,.85)';ctx.lineWidth=1.2;ctx.setLineDash([6,4]);
+  ctx.beginPath();ctx.moveTo(0,mid-tv*amp);ctx.lineTo(W,mid-tv*amp);ctx.stroke();
+  ctx.strokeStyle='rgba(196,137,58,.35)';ctx.lineWidth=0.8;
+  ctx.beginPath();ctx.moveTo(0,mid+tv*amp);ctx.lineTo(W,mid+tv*amp);ctx.stroke();
+  ctx.setLineDash([]);
   // Output level
   ctx.fillStyle='rgba(229,168,78,.8)';ctx.font='9px Space Mono';ctx.textAlign='right';
   ctx.fillText((m.out>=0?'+':'')+m.out.toFixed(2)+' dB',W-4,H-4);
@@ -1722,10 +1733,10 @@ function drawCC(ctx,W,H,m){
     ticks.forEach(d=>{
       const ty=gr?topP+(d/24)*vuH:topP+vuH*(1-(d+60)/60);
       if(ty<topP||ty>topP+vuH)return;
-      ctx.fillStyle='#2a4060';
+      ctx.fillStyle='#4a7090';
       ctx.fillText(gr?'-'+d:d,vx-2,ty+2);
       // Tick line légère
-      ctx.strokeStyle='rgba(42,64,96,.5)';ctx.lineWidth=0.5;
+      ctx.strokeStyle='rgba(74,112,144,.6)';ctx.lineWidth=0.5;
       ctx.beginPath();ctx.moveTo(vx-2,ty);ctx.lineTo(vx,ty);ctx.stroke();
     });
 
