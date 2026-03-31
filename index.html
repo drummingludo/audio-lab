@@ -1518,7 +1518,7 @@ function drawComp(){
   cancelAnimationFrame(compRaf);
   const cv=document.getElementById('comp-cv');if(!cv)return;
   const W=cv.parentElement?.offsetWidth||200;
-  const H=186; // hauteur fixe identique pour toutes les vues
+  const H=200; // hauteur fixe identique pour toutes les vues
   cv.width=W;cv.height=H;
   const ctx=cv.getContext('2d');
   ctx.fillStyle='#060c16';ctx.fillRect(0,0,W,H);
@@ -1664,26 +1664,29 @@ function drawCA(ctx,W,H,m){
     cActGR.forEach((g,i)=>{const x=i/(N-1)*W,y=grToY(g);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
     ctx.strokeStyle='#C4893A';ctx.lineWidth=1.5;ctx.stroke();
   }
-  // Forme d'onde symétrique — occupe 96% de la zone waveform
+  // Forme d'onde symétrique — mapping dB pour une grande lisibilité
   const mid=wvY+wvH/2, amp=wvH*0.48;
-  // Ligne de seuil ORANGE (position amplitude correspondant au threshold dBFS)
-  const tv=Math.min(1,Math.pow(10,Math.max(-80,cThr)/20));
-  ctx.strokeStyle='rgba(196,137,58,.7)';ctx.lineWidth=1;ctx.setLineDash([6,4]);
+  // Conversion dBFS → hauteur visuelle (log, non-linéaire pour agrandissement 3x)
+  // -60dBFS=0, -20dBFS=0.67, 0dBFS=1 — bien plus grand que linéaire
+  const dbToV=db=>Math.max(0,Math.min(1,(Math.max(-60,db)+60)/60));
+  // Ligne de seuil ORANGE
+  const tv=dbToV(cThr);
+  ctx.strokeStyle='rgba(196,137,58,.75)';ctx.lineWidth=1;ctx.setLineDash([6,4]);
   ctx.beginPath();ctx.moveTo(0,mid-tv*amp);ctx.lineTo(W,mid-tv*amp);ctx.stroke();
   ctx.strokeStyle='rgba(196,137,58,.3)';ctx.lineWidth=0.8;
   ctx.beginPath();ctx.moveTo(0,mid+tv*amp);ctx.lineTo(W,mid+tv*amp);ctx.stroke();
   ctx.setLineDash([]);
   if(cActIn.length>1){
-    const pts=cActIn.map(db=>Math.min(1,Math.pow(10,Math.max(-80,db)/20)));
+    const pts=cActIn.map(db=>dbToV(db));
     ctx.beginPath();ctx.moveTo(0,mid);
     pts.forEach((v,i)=>ctx.lineTo(i/(N-1)*W,mid-v*amp));
     ctx.lineTo(W-1,mid);
     pts.slice().reverse().forEach((v,i)=>ctx.lineTo((1-i/(N-1))*W,mid+v*amp));
     ctx.closePath();ctx.fillStyle='rgba(65,105,155,.28)';ctx.fill();
     ctx.beginPath();pts.forEach((v,i)=>i===0?ctx.moveTo(0,mid-v*amp):ctx.lineTo(i/(N-1)*W,mid-v*amp));
-    ctx.strokeStyle='rgba(120,180,245,.46)';ctx.lineWidth=1;ctx.stroke();
+    ctx.strokeStyle='rgba(120,180,245,.5)';ctx.lineWidth=1.2;ctx.stroke();
     ctx.beginPath();pts.forEach((v,i)=>i===0?ctx.moveTo(0,mid+v*amp):ctx.lineTo(i/(N-1)*W,mid+v*amp));
-    ctx.strokeStyle='rgba(120,180,245,.2)';ctx.lineWidth=0.7;ctx.stroke();
+    ctx.strokeStyle='rgba(120,180,245,.22)';ctx.lineWidth=0.8;ctx.stroke();
   }
   // Output level
   ctx.fillStyle='rgba(229,168,78,.8)';ctx.font='9px Space Mono';ctx.textAlign='right';
@@ -1692,39 +1695,64 @@ function drawCA(ctx,W,H,m){
 
 // ── Vue Collapsée ──────────────────────────────────────────────────────────
 function drawCC(ctx,W,H,m){
-  // VU étroits style broadcast standard
-  const topP=15,botP=13,arW=8;
-  const vuW=12; // largeur fixe fine, standard VU
+  const topP=15,botP=13,arW=7,scaleW=18; // scaleW = largeur colonne dB labels
+  const vuW=10; // barre VU étroite standard
   const vuH=H-topP-botP;
-  const totalW=3*vuW+3*arW;
-  const gap=Math.floor((W-totalW)/4);
-  const xs=[gap, gap*2+vuW+arW, gap*3+2*(vuW+arW)];
+  // Largeur d'un bloc = scaleW + vuW + arW
+  const blkW=scaleW+vuW+arW;
+  const totalBlk=3*blkW;
+  const gap=Math.max(4,Math.floor((W-totalBlk)/4));
+  // Position X du début de chaque bloc
+  const bx=[gap, gap*2+blkW, gap*3+blkW*2];
   const meters=[
-    {x:xs[0],db:m.in, gr:false,lbl:'Thresh',thr:cThr, fmt:m.in.toFixed(1)},
-    {x:xs[1],db:m.gr, gr:true, lbl:'GR',    thr:null, fmt:'-'+m.gr.toFixed(1)},
-    {x:xs[2],db:m.out,gr:false,lbl:'Out',   thr:null, fmt:(m.out>=0?'+':'')+m.out.toFixed(1)},
+    {bx:bx[0],db:m.in, gr:false,lbl:'Thresh',thr:cThr, fmt:m.in.toFixed(1)},
+    {bx:bx[1],db:m.gr, gr:true, lbl:'GR',    thr:null, fmt:'-'+m.gr.toFixed(1)},
+    {bx:bx[2],db:m.out,gr:false,lbl:'Out',   thr:null, fmt:(m.out>=0?'+':'')+m.out.toFixed(1)},
   ];
-  meters.forEach(({x,db,gr,lbl,thr,fmt})=>{
+  const sigTicks=[-3,-6,-12,-18,-24,-36,-48];
+  const grTicks=[3,6,9,12,18,24];
+
+  meters.forEach(({bx,db,gr,lbl,thr,fmt})=>{
     const norm=gr?Math.min(1,m.gr/24):(db+60)/60;
-    vuBar(ctx,x,topP,vuW,vuH,norm,gr);
-    // Marqueur seuil orange horizontal
+    const vx=bx+scaleW; // X de la barre VU
+
+    // ── Échelle dB (à gauche de la barre) ──
+    ctx.font='6px Space Mono';ctx.textAlign='right';
+    const ticks=gr?grTicks:sigTicks;
+    ticks.forEach(d=>{
+      const ty=gr?topP+(d/24)*vuH:topP+vuH*(1-(d+60)/60);
+      if(ty<topP||ty>topP+vuH)return;
+      ctx.fillStyle='#2a4060';
+      ctx.fillText(gr?'-'+d:d,vx-2,ty+2);
+      // Tick line légère
+      ctx.strokeStyle='rgba(42,64,96,.5)';ctx.lineWidth=0.5;
+      ctx.beginPath();ctx.moveTo(vx-2,ty);ctx.lineTo(vx,ty);ctx.stroke();
+    });
+
+    // ── Barre VU ──
+    vuBar(ctx,vx,topP,vuW,vuH,norm,gr);
+
+    // ── Marqueur seuil ──
     if(thr!==null){
       const ty=topP+vuH*(1-(thr+60)/60);
       if(ty>=topP&&ty<=topP+vuH){
         ctx.strokeStyle='#C4893A';ctx.lineWidth=1.5;
-        ctx.beginPath();ctx.moveTo(x,ty);ctx.lineTo(x+vuW,ty);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(vx,ty);ctx.lineTo(vx+vuW,ty);ctx.stroke();
       }
     }
-    // Flèche indicateur (à droite de la barre)
+
+    // ── Flèche indicateur ──
     const ay=Math.max(topP+4,Math.min(topP+vuH-4,gr?topP+norm*vuH:topP+vuH*(1-norm)));
     ctx.fillStyle='#5a7898';
-    ctx.beginPath();ctx.moveTo(x+vuW+1,ay-3.5);ctx.lineTo(x+vuW+arW,ay);ctx.lineTo(x+vuW+1,ay+3.5);ctx.closePath();ctx.fill();
-    // Label
+    ctx.beginPath();ctx.moveTo(vx+vuW+1,ay-3.5);ctx.lineTo(vx+vuW+arW,ay);ctx.lineTo(vx+vuW+1,ay+3.5);ctx.closePath();ctx.fill();
+
+    // ── Label (haut) ──
     ctx.fillStyle='#3a5870';ctx.font='8px Space Grotesk';ctx.textAlign='center';
-    ctx.fillText(lbl,x+vuW/2,topP-4);
-    // Valeur
+    ctx.fillText(lbl,vx+vuW/2,topP-4);
+
+    // ── Valeur (bas) ──
     ctx.fillStyle='#6a90b0';ctx.font='7px Space Mono';ctx.textAlign='center';
-    ctx.fillText(fmt,x+vuW/2,H-3);
+    ctx.fillText(fmt,vx+vuW/2,H-3);
   });
 }
 
