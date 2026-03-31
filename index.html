@@ -1662,13 +1662,12 @@ function drawCompCollapsed(ctx,W,H){
 }
 const ACT_SEC=5;
 function drawCompActivity(ctx,W,H){
-  // Ableton-like: GR (haut, orange descendant), Signal In/Out (bas, dBFS, 0dBFS en haut)
+  // Style Ableton: forme d'onde symétrique scrollante (bas) + courbe GR (haut)
   const N=W;
-  // Lecture audio réelle si disponible
   const hasSig=PLR.comp?.playing;
   let dbIn=-80;
   if(hasSig&&PLR.comp?.anal){
-    const td=new Float32Array(PLR.comp.anal.fftSize);
+    const td=new Float32Array(PLR.comp.anal.fftSize||2048);
     PLR.comp.anal.getFloatTimeDomainData(td);
     let rms=0;for(let i=0;i<td.length;i++)rms+=td[i]*td[i];
     rms=Math.sqrt(rms/td.length);
@@ -1682,77 +1681,79 @@ function drawCompActivity(ctx,W,H){
   cActIn.push(dbIn);cActOut.push(dbOut);cActGR.push(gr);
   if(cActIn.length>N){cActIn.shift();cActOut.shift();cActGR.shift();}
 
-  // Layout
-  const grH=Math.floor(H*0.28), sigY=grH+3, sigH=H-grH-3;
-  const dbRange=60; // 0 à -60 dBFS
-  const grRange=24; // 0 à -24 dB GR
-  const dToY=db=>sigY+sigH*(1-Math.max(0,Math.min(1,(db+dbRange)/dbRange)));
-  const grToY=g=>grH*Math.min(1,g/grRange);
+  // Layout : 32% GR (haut) / 68% forme d'onde (bas)
+  const grH=Math.floor(H*0.32);
+  const sigY=grH+1, sigH=H-grH-1;
+  const grRange=24;
+  const grToY=g=>Math.min(grH-1,g/grRange*(grH-1));
 
   // Fond
-  ctx.fillStyle='#08121e';ctx.fillRect(0,0,W,H);
-  ctx.fillStyle='#060e1a';ctx.fillRect(0,0,W,grH);
-  ctx.fillStyle='#070c18';ctx.fillRect(0,sigY,W,sigH);
+  ctx.fillStyle='#07101c';ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#060e18';ctx.fillRect(0,0,W,grH);
 
-  // Grille signal (dBFS)
-  ctx.lineWidth=0.5;
-  [-6,-12,-18,-24,-36,-48].forEach(db=>{
-    const y=dToY(db);
-    ctx.strokeStyle='#0d1c2e';ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();
-    ctx.fillStyle='#2a4060';ctx.font='7px Space Mono';ctx.textAlign='left';ctx.fillText(db,2,y-1);
-  });
+  // Séparateur
+  ctx.strokeStyle='#162535';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(0,grH);ctx.lineTo(W,grH);ctx.stroke();
+
+  // ── FORME D'ONDE (bas) ── style Ableton : enveloppe symétrique scrollante
+  const mid=sigY+sigH/2;
+  const maxAmp=sigH*0.46;
+  if(cActIn.length>1){
+    // Convertit dBFS → amplitude linéaire (0..1)
+    const pts=cActIn.map(db=>Math.min(1,Math.pow(10,Math.max(-80,db)/20)));
+    // Remplissage symétrique
+    ctx.beginPath();ctx.moveTo(0,mid);
+    pts.forEach((v,i)=>ctx.lineTo(i/(N-1)*W,mid-v*maxAmp));
+    ctx.lineTo(W-1,mid);
+    pts.slice().reverse().forEach((v,i)=>ctx.lineTo((1-i/(N-1))*W,mid+v*maxAmp));
+    ctx.closePath();
+    ctx.fillStyle='rgba(75,115,165,.3)';ctx.fill();
+    // Bord supérieur
+    ctx.beginPath();
+    pts.forEach((v,i)=>i===0?ctx.moveTo(0,mid-v*maxAmp):ctx.lineTo(i/(N-1)*W,mid-v*maxAmp));
+    ctx.strokeStyle='rgba(140,190,250,.55)';ctx.lineWidth=1.2;ctx.stroke();
+    // Bord inférieur (plus léger)
+    ctx.beginPath();
+    pts.forEach((v,i)=>i===0?ctx.moveTo(0,mid+v*maxAmp):ctx.lineTo(i/(N-1)*W,mid+v*maxAmp));
+    ctx.strokeStyle='rgba(140,190,250,.25)';ctx.lineWidth=0.8;ctx.stroke();
+  }
+
+  // Ligne de seuil dans la zone forme d'onde
+  const tAmpNorm=Math.max(0,Math.min(1,(cThr+80)/80));
+  const tAmpY=mid-tAmpNorm*maxAmp;
+  ctx.strokeStyle='rgba(196,137,58,.5)';ctx.lineWidth=1;ctx.setLineDash([5,4]);
+  ctx.beginPath();ctx.moveTo(0,tAmpY);ctx.lineTo(W,tAmpY);ctx.stroke();ctx.setLineDash([]);
+
+  // Niveau de sortie (bas droite)
+  ctx.fillStyle='rgba(229,168,78,.9)';ctx.font='9px Space Mono';ctx.textAlign='right';
+  ctx.fillText((dbOut>=0?'+':'')+dbOut.toFixed(2)+' dB',W-4,H-4);
+
+  // ── GR (haut) ──
+  // Ligne de référence 0 GR pointillée (comme Ableton)
+  ctx.strokeStyle='rgba(255,255,255,.18)';ctx.lineWidth=0.7;ctx.setLineDash([3,7]);
+  ctx.beginPath();ctx.moveTo(0,3);ctx.lineTo(W,3);ctx.stroke();ctx.setLineDash([]);
+
   // Grille GR
   [6,12,18].forEach(g=>{
     const y=grToY(g);if(y>=grH)return;
-    ctx.strokeStyle='#0d1c2e';ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();
-    ctx.fillStyle='#2a4060';ctx.font='7px Space Mono';ctx.textAlign='left';ctx.fillText('-'+g,2,y-1);
+    ctx.strokeStyle='#0d1c2e';ctx.lineWidth=0.4;
+    ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();
+    ctx.fillStyle='#2a4060';ctx.font='7px Space Mono';ctx.textAlign='left';
+    ctx.fillText('-'+g,2,y-1);
   });
   ctx.fillStyle='#2a4060';ctx.font='7px Space Grotesk';ctx.textAlign='right';
-  ctx.fillText('GR',W-2,grH-2);ctx.fillText('0dBFS',W-2,sigY+9);
+  ctx.fillText('GR',W-2,grH-3);
 
-  // Séparateur
-  ctx.strokeStyle='#1e3048';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,grH+1);ctx.lineTo(W,grH+1);ctx.stroke();
-
-  // Spectre en arrière-plan (activité)
-  if(hasSig)drawSpectrum(ctx,W,H,'comp');
-
-  // Ligne de seuil
-  const ty=dToY(cThr);
-  ctx.strokeStyle='rgba(196,137,58,.7)';ctx.lineWidth=1;ctx.setLineDash([5,3]);
-  ctx.beginPath();ctx.moveTo(0,ty);ctx.lineTo(W,ty);ctx.stroke();ctx.setLineDash([]);
-  ctx.fillStyle='rgba(196,137,58,.9)';ctx.font='7px Space Mono';ctx.textAlign='right';
-  ctx.fillText('T '+cThr+'dB',W-2,ty-2);
-
-  // Courbe GR (orange, descend du haut)
-  ctx.strokeStyle='#C4893A';ctx.lineWidth=1.5;ctx.beginPath();
-  cActGR.forEach((g,i)=>{const x=i/(N-1)*W,y=grToY(g);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
-  ctx.stroke();
-  // Remplissage GR
-  ctx.fillStyle='rgba(196,137,58,.12)';ctx.beginPath();ctx.moveTo(0,0);
-  cActGR.forEach((g,i)=>{const x=i/(N-1)*W,y=grToY(g);ctx.lineTo(x,y);});
-  ctx.lineTo(W,0);ctx.closePath();ctx.fill();
-
-  // Signal In (gris-bleu clair) — shown in 's' and default mode
-  if(cAMode!=='o'&&cAMode!=='g'){
-    ctx.strokeStyle='rgba(160,195,235,.7)';ctx.lineWidth=1.5;ctx.beginPath();
-    cActIn.forEach((db,i)=>{const x=i/(N-1)*W,y=dToY(db);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
-    ctx.stroke();
-  }
-  // Signal Out
-  if(cAMode==='s'||cAMode==='o'){
-    ctx.strokeStyle='rgba(100,200,130,.85)';ctx.lineWidth=1.5;ctx.beginPath();
-    cActOut.forEach((db,i)=>{const x=i/(N-1)*W,y=dToY(db);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
-    ctx.stroke();
-  }
-
-  // Légende
-  if(cAMode!=='o'&&cAMode!=='g'){
-    ctx.fillStyle='rgba(160,195,235,.8)';ctx.fillRect(4,sigY+5,8,2);
-    ctx.fillStyle='#8ab0cc';ctx.font='7px Space Grotesk';ctx.textAlign='left';ctx.fillText('In',14,sigY+9);
-  }
-  if(cAMode==='s'||cAMode==='o'){
-    ctx.fillStyle='rgba(100,200,130,.8)';ctx.fillRect(4,sigY+15,8,2);
-    ctx.fillStyle='#8ab0cc';ctx.font='7px Space Grotesk';ctx.textAlign='left';ctx.fillText('Out',14,sigY+19);
+  // Remplissage GR (orange, descend du haut)
+  if(cActGR.length>1){
+    ctx.beginPath();ctx.moveTo(0,0);
+    cActGR.forEach((g,i)=>{const x=i/(N-1)*W,y=grToY(g);ctx.lineTo(x,y);});
+    ctx.lineTo(W-1,0);ctx.closePath();
+    ctx.fillStyle='rgba(196,137,58,.14)';ctx.fill();
+    // Courbe GR
+    ctx.beginPath();
+    cActGR.forEach((g,i)=>{const x=i/(N-1)*W,y=grToY(g);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+    ctx.strokeStyle='#C4893A';ctx.lineWidth=1.8;ctx.stroke();
   }
 }
 setInterval(()=>{if(cView==='mn'&&document.getElementById('t-comp')?.classList.contains('on'))drawComp();},70);
