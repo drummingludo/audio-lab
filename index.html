@@ -272,12 +272,12 @@ select{background:var(--bg3);border:1px solid var(--border);color:var(--text);pa
         </div>
         <div class="tc">
           <div>
-            <div class="slr"><span class="sll">Threshold</span><input type="range" min="-60" max="0" value="-20" oninput="setC('thr',this.value)"><span class="slv" id="c-thr">-20 dB</span></div>
-            <div class="slr"><span class="sll">Ratio</span><input type="range" min="1" max="20" value="4" step=".5" oninput="setC('rat',this.value)"><span class="slv" id="c-rat">4:1</span></div>
-            <div class="slr"><span class="sll">Knee</span><input type="range" min="0" max="20" value="6" oninput="setC('kn',this.value)"><span class="slv" id="c-kn">6 dB</span></div>
-            <div class="slr"><span class="sll">Attack</span><input type="range" min=".1" max="200" value="10" oninput="setC('atk',this.value)"><span class="slv" id="c-atk">10 ms</span></div>
-            <div class="slr"><span class="sll">Release</span><input type="range" min="10" max="1000" value="100" oninput="setC('rel',this.value)"><span class="slv" id="c-rel">100 ms</span></div>
-            <div class="slr"><span class="sll">Makeup</span><input type="range" min="0" max="24" value="3" oninput="setC('mk',this.value)"><span class="slv" id="c-mk">+3 dB</span></div>
+            <div class="slr"><span class="sll">Threshold</span><input type="range" min="-60" max="0" value="0" oninput="setC('thr',this.value)"><span class="slv" id="c-thr">0 dB</span></div>
+            <div class="slr"><span class="sll">Ratio</span><input type="range" min="1" max="20" value="1" step=".5" oninput="setC('rat',this.value)"><span class="slv" id="c-rat">1:1</span></div>
+            <div class="slr"><span class="sll">Knee</span><input type="range" min="0" max="20" value="0" oninput="setC('kn',this.value)"><span class="slv" id="c-kn">0 dB</span></div>
+            <div class="slr"><span class="sll">Attack</span><input type="range" min=".1" max="200" value=".1" oninput="setC('atk',this.value)"><span class="slv" id="c-atk">0.1 ms</span></div>
+            <div class="slr"><span class="sll">Release</span><input type="range" min="10" max="1000" value="10" oninput="setC('rel',this.value)"><span class="slv" id="c-rel">10 ms</span></div>
+            <div class="slr"><span class="sll">Makeup</span><input type="range" min="0" max="24" value="0" oninput="setC('mk',this.value)"><span class="slv" id="c-mk">+0 dB</span></div>
           </div>
           <div>
             <canvas id="comp-cv" class="vc" style="width:100%;display:block"></canvas>
@@ -1475,7 +1475,7 @@ function drawEQ() {
 buildEQStrips();
 
 // ── Comp ───────────────────────────────────────────────────────────────────
-let cThr=-20, cRat=4, cKn=6, cAtk=10, cRel=100, cMk=3;
+let cThr=0, cRat=1, cKn=0, cAtk=0.1, cRel=10, cMk=0;
 function calcGR(dbIn) {
   const ex = dbIn - cThr, hk = cKn / 2;
   if (ex < -hk) return 0;
@@ -1483,7 +1483,7 @@ function calcGR(dbIn) {
   return ex * (1 - 1/cRat);
 }
 let cView='tr', cActIn=[], cActOut=[], cActGR=[];
-let cSmIn=-40, cSmGR=0, cSmOut=-40; // valeurs lissées pour les VU
+let cSmIn=-80, cSmGR=0, cSmOut=-80; // valeurs lissées pour les VU
 function setC(p,v){
   if(p==='thr'){cThr=+v;document.getElementById('c-thr').textContent=v+' dB';}
   if(p==='rat'){cRat=+v;document.getElementById('c-rat').textContent=v+':1';}
@@ -1498,28 +1498,27 @@ let compRaf=null;
 // Lecture des niveaux audio (lissés)
 function cMeters(){
   const hasSig=PLR.comp?.playing;
-  let raw=-80;
   if(hasSig&&PLR.comp?.anal){
     const td=new Float32Array(PLR.comp.anal.fftSize||2048);
     PLR.comp.anal.getFloatTimeDomainData(td);
     let rms=0;for(let i=0;i<td.length;i++)rms+=td[i]*td[i];
-    rms=Math.sqrt(rms/td.length);raw=rms>0.00001?20*Math.log10(rms):-80;
+    rms=Math.sqrt(rms/td.length);
+    const raw=rms>0.00001?20*Math.log10(rms):-80;
+    cSmIn+=(raw-cSmIn)*0.18;
   } else {
-    const t=Date.now()/1000;
-    raw=-20+Math.sin(t*2.1)*9+Math.sin(t*5.3)*3+Math.random()*1.5;
+    // Déclin vers silence quand pas d'audio
+    cSmIn+=(-80-cSmIn)*0.06;
   }
-  const a=0.18;
-  cSmIn+=(raw-cSmIn)*a;
   const gr=calcGR(cSmIn);
-  cSmGR+=(gr-cSmGR)*a;
-  cSmOut+=((cSmIn-cSmGR+cMk)-cSmOut)*a;
+  cSmGR+=(gr-cSmGR)*0.18;
+  cSmOut+=((cSmIn-cSmGR+cMk)-cSmOut)*0.18;
   return{in:cSmIn,gr:cSmGR,out:cSmOut};
 }
 function drawComp(){
   cancelAnimationFrame(compRaf);
   const cv=document.getElementById('comp-cv');if(!cv)return;
   const W=cv.parentElement?.offsetWidth||200;
-  const H=cView==='cl'?186:cView==='ac'?108:164;
+  const H=186; // hauteur fixe identique pour toutes les vues
   cv.width=W;cv.height=H;
   const ctx=cv.getContext('2d');
   ctx.fillStyle='#060c16';ctx.fillRect(0,0,W,H);
@@ -1560,10 +1559,10 @@ function vuBar(ctx,x,y,w,h,norm,grMode){
 
 // ── Vue Transfert ──────────────────────────────────────────────────────────
 function drawCT(ctx,W,H,m){
-  const vuW=14,arW=9;
-  const lPad=vuW+arW+8; // zone thresh gauche
-  const rPad=vuW+8+vuW+arW+6; // zone GR+Out droite
-  const pT=14,pB=13;
+  const vuW=12,arW=8;
+  const lPad=6+vuW+arW+10; // thresh + flèche + marge
+  const rPad=10+vuW+6+vuW+arW+6; // GR + gap + Out + flèche + marge
+  const pT=16,pB=15;
   const cX=lPad,cY=pT,cW=W-lPad-rPad,cH=H-pT-pB;
   // Zone courbe
   ctx.fillStyle='#040c18';ctx.fillRect(cX,cY,cW,cH);
@@ -1610,29 +1609,28 @@ function drawCT(ctx,W,H,m){
   ctx.beginPath();ctx.arc(dx,dy,6,0,Math.PI*2);ctx.strokeStyle='#E5A84E';ctx.lineWidth=1.5;ctx.stroke();
   ctx.beginPath();ctx.arc(dx,dy,2.5,0,Math.PI*2);ctx.fillStyle='#E5A84E';ctx.fill();
   // ── VU Thresh (gauche) ──
-  const tvX=2,tvY=cY,tvH=cH;
+  const tvX=6,tvY=cY,tvH=cH;
   vuBar(ctx,tvX,tvY,vuW,tvH,(m.in+60)/60,false);
   // Marqueur seuil
   const tny=tvY+tvH*(1-(cThr+60)/60);
-  ctx.strokeStyle='#C4893A';ctx.lineWidth=1.5;
-  ctx.beginPath();ctx.moveTo(tvX,tny);ctx.lineTo(tvX+vuW,tny);ctx.stroke();
-  // Flèche indicateur
+  if(tny>=tvY&&tny<=tvY+tvH){ctx.strokeStyle='#C4893A';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(tvX,tny);ctx.lineTo(tvX+vuW,tny);ctx.stroke();}
+  // Flèche
   const tay=Math.max(tvY+4,Math.min(tvY+tvH-4,tvY+tvH*(1-(m.in+60)/60)));
-  ctx.fillStyle='#6a8faa';ctx.beginPath();ctx.moveTo(tvX+vuW+2,tay-4);ctx.lineTo(tvX+vuW+arW,tay);ctx.lineTo(tvX+vuW+2,tay+4);ctx.closePath();ctx.fill();
+  ctx.fillStyle='#5a7898';ctx.beginPath();ctx.moveTo(tvX+vuW+1,tay-3.5);ctx.lineTo(tvX+vuW+arW,tay);ctx.lineTo(tvX+vuW+1,tay+3.5);ctx.closePath();ctx.fill();
   // Label + valeur
-  ctx.fillStyle='#3a5870';ctx.font='8px Space Grotesk';ctx.textAlign='center';ctx.fillText('Thresh',tvX+vuW/2,cY-3);
+  ctx.fillStyle='#3a5870';ctx.font='8px Space Grotesk';ctx.textAlign='center';ctx.fillText('Thresh',tvX+vuW/2,cY-4);
   ctx.fillStyle='#6a90b0';ctx.font='7px Space Mono';ctx.textAlign='center';ctx.fillText(m.in.toFixed(1),tvX+vuW/2,cY+tvH+11);
   // ── VU GR (droite, premier) ──
-  const grX=W-rPad+4,grY=cY,grH2=cH;
-  vuBar(ctx,grX,grY,vuW,grH2,m.gr/24,true);
-  ctx.fillStyle='#3a5870';ctx.font='8px Space Grotesk';ctx.textAlign='center';ctx.fillText('GR',grX+vuW/2,grY-3);
+  const grX=W-rPad+10,grY=cY,grH2=cH;
+  vuBar(ctx,grX,grY,vuW,grH2,Math.min(1,m.gr/24),true);
+  ctx.fillStyle='#3a5870';ctx.font='8px Space Grotesk';ctx.textAlign='center';ctx.fillText('GR',grX+vuW/2,grY-4);
   ctx.fillStyle='#6a90b0';ctx.font='7px Space Mono';ctx.textAlign='center';ctx.fillText('-'+m.gr.toFixed(1),grX+vuW/2,grY+grH2+11);
   // ── VU Out (droite, second) ──
-  const ovX=W-vuW-arW-2,ovY=cY,ovH=cH;
+  const ovX=W-vuW-arW-6,ovY=cY,ovH=cH;
   vuBar(ctx,ovX,ovY,vuW,ovH,(m.out+60)/60,false);
   const oay=Math.max(ovY+4,Math.min(ovY+ovH-4,ovY+ovH*(1-(m.out+60)/60)));
-  ctx.fillStyle='#6a8faa';ctx.beginPath();ctx.moveTo(ovX+vuW+2,oay-4);ctx.lineTo(ovX+vuW+arW,oay);ctx.lineTo(ovX+vuW+2,oay+4);ctx.closePath();ctx.fill();
-  ctx.fillStyle='#3a5870';ctx.font='8px Space Grotesk';ctx.textAlign='center';ctx.fillText('Out',ovX+vuW/2,ovY-3);
+  ctx.fillStyle='#5a7898';ctx.beginPath();ctx.moveTo(ovX+vuW+1,oay-3.5);ctx.lineTo(ovX+vuW+arW,oay);ctx.lineTo(ovX+vuW+1,oay+3.5);ctx.closePath();ctx.fill();
+  ctx.fillStyle='#3a5870';ctx.font='8px Space Grotesk';ctx.textAlign='center';ctx.fillText('Out',ovX+vuW/2,ovY-4);
   ctx.fillStyle='#6a90b0';ctx.font='7px Space Mono';ctx.textAlign='center';ctx.fillText((m.out>=0?'+':'')+m.out.toFixed(2),ovX+vuW/2,ovY+ovH+11);
 }
 
@@ -1646,9 +1644,9 @@ function drawCA(ctx,W,H,m){
   ctx.fillStyle='#6a90b0';ctx.font='8px Space Mono';ctx.fillText(cThr+' dB',42,12);
   ctx.fillStyle='#3a5870';ctx.font='8px Space Grotesk';ctx.textAlign='right';ctx.fillText('Out',W-52,12);
   ctx.fillStyle='#6a90b0';ctx.font='8px Space Mono';ctx.fillText((m.out>=0?'+':'')+m.out.toFixed(2)+' dB',W-4,12);
-  // Main area
+  // Main area — 25% GR (haut) / 75% forme d'onde (bas)
   const aY=hH,aH=H-hH;
-  const grH=Math.floor(aH*0.33),wvY=aY+grH,wvH=aH-grH;
+  const grH=Math.floor(aH*0.25),wvY=aY+grH,wvH=aH-grH;
   ctx.fillStyle='#060f1c';ctx.fillRect(0,aY,W,grH);
   ctx.fillStyle='#060c18';ctx.fillRect(0,wvY,W,wvH);
   ctx.strokeStyle='#0c1926';ctx.lineWidth=0.7;ctx.beginPath();ctx.moveTo(0,wvY);ctx.lineTo(W,wvY);ctx.stroke();
@@ -1666,13 +1664,15 @@ function drawCA(ctx,W,H,m){
     cActGR.forEach((g,i)=>{const x=i/(N-1)*W,y=grToY(g);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
     ctx.strokeStyle='#C4893A';ctx.lineWidth=1.5;ctx.stroke();
   }
-  // Forme d'onde symétrique
-  const mid=wvY+wvH/2, amp=wvH*0.44;
-  // Lignes seuil (amplitude)
+  // Forme d'onde symétrique — occupe 96% de la zone waveform
+  const mid=wvY+wvH/2, amp=wvH*0.48;
+  // Ligne de seuil ORANGE (position amplitude correspondant au threshold dBFS)
   const tv=Math.min(1,Math.pow(10,Math.max(-80,cThr)/20));
-  ctx.strokeStyle='rgba(48,184,216,.3)';ctx.lineWidth=0.8;
+  ctx.strokeStyle='rgba(196,137,58,.7)';ctx.lineWidth=1;ctx.setLineDash([6,4]);
   ctx.beginPath();ctx.moveTo(0,mid-tv*amp);ctx.lineTo(W,mid-tv*amp);ctx.stroke();
+  ctx.strokeStyle='rgba(196,137,58,.3)';ctx.lineWidth=0.8;
   ctx.beginPath();ctx.moveTo(0,mid+tv*amp);ctx.lineTo(W,mid+tv*amp);ctx.stroke();
+  ctx.setLineDash([]);
   if(cActIn.length>1){
     const pts=cActIn.map(db=>Math.min(1,Math.pow(10,Math.max(-80,db)/20)));
     ctx.beginPath();ctx.moveTo(0,mid);
@@ -1692,30 +1692,36 @@ function drawCA(ctx,W,H,m){
 
 // ── Vue Collapsée ──────────────────────────────────────────────────────────
 function drawCC(ctx,W,H,m){
-  const topP=14,botP=14,arW=9;
+  // VU étroits style broadcast standard
+  const topP=15,botP=13,arW=8;
+  const vuW=12; // largeur fixe fine, standard VU
   const vuH=H-topP-botP;
-  const gap=Math.max(8,Math.floor(W/14));
-  const vuW=Math.max(12,Math.floor((W-4*gap-3*arW)/3));
+  const totalW=3*vuW+3*arW;
+  const gap=Math.floor((W-totalW)/4);
+  const xs=[gap, gap*2+vuW+arW, gap*3+2*(vuW+arW)];
   const meters=[
-    {x:gap,           db:m.in,  gr:false, lbl:'Thresh', thr:cThr, fmt:m.in.toFixed(1)+' dB'},
-    {x:gap*2+vuW+arW, db:m.gr,  gr:true,  lbl:'GR',     thr:null, fmt:'-'+m.gr.toFixed(1)},
-    {x:gap*3+2*(vuW+arW),db:m.out,gr:false,lbl:'Out',   thr:null, fmt:(m.out>=0?'+':'')+m.out.toFixed(2)+' dB'},
+    {x:xs[0],db:m.in, gr:false,lbl:'Thresh',thr:cThr, fmt:m.in.toFixed(1)},
+    {x:xs[1],db:m.gr, gr:true, lbl:'GR',    thr:null, fmt:'-'+m.gr.toFixed(1)},
+    {x:xs[2],db:m.out,gr:false,lbl:'Out',   thr:null, fmt:(m.out>=0?'+':'')+m.out.toFixed(1)},
   ];
   meters.forEach(({x,db,gr,lbl,thr,fmt})=>{
-    const norm=gr?m.gr/24:(db+60)/60;
+    const norm=gr?Math.min(1,m.gr/24):(db+60)/60;
     vuBar(ctx,x,topP,vuW,vuH,norm,gr);
-    // Marqueur seuil
+    // Marqueur seuil orange horizontal
     if(thr!==null){
       const ty=topP+vuH*(1-(thr+60)/60);
-      if(ty>=topP&&ty<=topP+vuH){ctx.strokeStyle='#C4893A';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(x,ty);ctx.lineTo(x+vuW,ty);ctx.stroke();}
+      if(ty>=topP&&ty<=topP+vuH){
+        ctx.strokeStyle='#C4893A';ctx.lineWidth=1.5;
+        ctx.beginPath();ctx.moveTo(x,ty);ctx.lineTo(x+vuW,ty);ctx.stroke();
+      }
     }
-    // Flèche
+    // Flèche indicateur (à droite de la barre)
     const ay=Math.max(topP+4,Math.min(topP+vuH-4,gr?topP+norm*vuH:topP+vuH*(1-norm)));
-    ctx.fillStyle='#6a8faa';
-    ctx.beginPath();ctx.moveTo(x+vuW+2,ay-4);ctx.lineTo(x+vuW+arW,ay);ctx.lineTo(x+vuW+2,ay+4);ctx.closePath();ctx.fill();
+    ctx.fillStyle='#5a7898';
+    ctx.beginPath();ctx.moveTo(x+vuW+1,ay-3.5);ctx.lineTo(x+vuW+arW,ay);ctx.lineTo(x+vuW+1,ay+3.5);ctx.closePath();ctx.fill();
     // Label
     ctx.fillStyle='#3a5870';ctx.font='8px Space Grotesk';ctx.textAlign='center';
-    ctx.fillText(lbl,x+vuW/2,topP-3);
+    ctx.fillText(lbl,x+vuW/2,topP-4);
     // Valeur
     ctx.fillStyle='#6a90b0';ctx.font='7px Space Mono';ctx.textAlign='center';
     ctx.fillText(fmt,x+vuW/2,H-3);
