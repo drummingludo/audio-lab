@@ -45,8 +45,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13
 .hdr{display:flex;align-items:center;gap:8px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border);flex-wrap:wrap;}
 .hdr-r{display:flex;align-items:center;gap:8px;margin-left:auto;flex-shrink:0;}
 /* BYPASS */
-.bp{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--cdim);background:transparent;cursor:pointer;flex-shrink:0;transition:all .15s;}
-.bp.on{background:var(--copper);box-shadow:0 0 6px var(--copper);}
+.bp{padding:2px 9px;border-radius:4px;border:1px solid var(--cdim);background:transparent;cursor:pointer;flex-shrink:0;transition:all .15s;font-size:9px;font-family:var(--font);font-weight:500;letter-spacing:.5px;color:var(--muted);text-transform:uppercase;}
+.bp.on{background:var(--cdim);border-color:var(--copper);color:var(--led);box-shadow:0 0 6px rgba(196,137,58,.25);}
 /* AUDIO BAR */
 .abar{display:flex;align-items:center;gap:6px;flex:1;flex-wrap:wrap;}
 .ibtn{background:var(--bg3);border:1px solid var(--border);color:var(--dim);padding:3px 8px;font-size:9px;cursor:pointer;border-radius:4px;font-family:var(--font);letter-spacing:.5px;text-transform:uppercase;white-space:nowrap;}
@@ -92,8 +92,10 @@ select{background:var(--bg3);border:1px solid var(--border);color:var(--text);pa
 .eqgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-top:8px;}
 .eqs{background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:6px 4px;display:flex;flex-direction:column;align-items:center;gap:4px;}
 .eqs.off{opacity:.35;}
-.eqon{width:12px;height:12px;border-radius:50%;border:1px solid var(--cdim);background:transparent;cursor:pointer;}
-.eqon.on{background:var(--copper);}
+.eqon{padding:1px 6px;border-radius:3px;border:1px solid var(--muted);background:transparent;cursor:pointer;font-size:8px;font-family:var(--font);font-weight:600;letter-spacing:.4px;color:var(--muted);text-transform:uppercase;transition:all .12s;}
+.eqon::after{content:'Off'}
+.eqon.on{background:#1a2e1a;border-color:#3fc87a;color:#3fc87a;box-shadow:0 0 5px rgba(63,200,122,.3);}
+.eqon.on::after{content:'On'}
 /* LUFS */
 .lgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:8px 0;}
 .lc{background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:7px;text-align:center;}
@@ -208,7 +210,7 @@ select{background:var(--bg3);border:1px solid var(--border);color:var(--text);pa
     <!-- SIGNAL GEN -->
     <div class="tool on" id="t-siggen">
       <div class="card">
-        <div class="hdr"><div class="hdr-r"><button class="bp on" id="bp-sig" onclick="this.classList.toggle('on')"></button></div></div>
+        <div class="hdr"><div class="hdr-r"><button class="bp on" id="bp-sig" onclick="this.classList.toggle('on')">Bypass</button></div></div>
         <div class="tc">
           <div>
             <div class="wbtns">
@@ -237,7 +239,7 @@ select{background:var(--bg3);border:1px solid var(--border);color:var(--text);pa
           <div class="abar" id="abar-eq"></div>
           <div class="hdr-r">
             <div class="dwrap" id="dwrap-eq"><canvas id="dw-eq" width="38" height="38" class="dknob" data-id="eq" data-val="100"></canvas><div class="dlbl" id="dl-eq">100%</div></div>
-            <button class="bp on" id="bp-eq" onclick="toggleBP('eq',this)"></button>
+            <button class="bp on" id="bp-eq" onclick="toggleBP('eq',this)">Bypass</button>
           </div>
         </div>
         <div style="display:flex;gap:6px;margin-bottom:6px;align-items:center;flex-wrap:wrap">
@@ -267,7 +269,7 @@ select{background:var(--bg3);border:1px solid var(--border);color:var(--text);pa
           <div class="abar" id="abar-comp"></div>
           <div class="hdr-r">
             <div class="dwrap" id="dwrap-comp"><canvas id="dw-comp" width="38" height="38" class="dknob" data-id="comp" data-val="100"></canvas><div class="dlbl" id="dl-comp">100%</div></div>
-            <button class="bp on" id="bp-comp" onclick="toggleBP('comp',this)"></button>
+            <button class="bp on" id="bp-comp" onclick="toggleBP('comp',this)">Bypass</button>
           </div>
         </div>
         <div class="tc">
@@ -306,7 +308,7 @@ select{background:var(--bg3);border:1px solid var(--border);color:var(--text);pa
           <div class="abar" id="abar-gate"></div>
           <div class="hdr-r">
             <div class="dwrap"><canvas id="dw-gate" width="38" height="38" class="dknob" data-id="gate" data-val="100"></canvas><div class="dlbl" id="dl-gate">100%</div></div>
-            <button class="bp on" id="bp-gate" onclick="toggleBP('gate',this)"></button>
+            <button class="bp on" id="bp-gate" onclick="toggleBP('gate',this)">Bypass</button>
           </div>
         </div>
         <div class="wbtns"><button class="wb on" onclick="setBG(this);gM='gate'">Gate</button><button class="wb" onclick="setBG(this);gM='expander'">Expander</button></div>
@@ -319,11 +321,11 @@ select{background:var(--bg3);border:1px solid var(--border);color:var(--text);pa
             <div class="slr"><span class="sll">Release</span><input type="range" min="10" max="1000" value="200" oninput="setG('rel',this.value)"><span class="slv" id="g-rel">200 ms</span></div>
           </div>
           <div>
-            <canvas id="gate-cv" class="vc" style="aspect-ratio:1;height:auto"></canvas>
-            <div style="display:flex;gap:4px;margin-top:6px">
+            <canvas id="gate-cv" class="vc" style="width:100%;display:block"></canvas>
+            <div style="display:flex;gap:4px;margin-top:6px;flex-wrap:wrap">
               <button class="cvb on" id="gv-tr" onclick="setGV('tr')">Transfert</button>
-              <button class="cvb" id="gv-mn" onclick="setGV('mn')">Minimal</button>
               <button class="cvb" id="gv-ac" onclick="setGV('ac')">Activité</button>
+              <button class="cvb" id="gv-cl" onclick="setGV('cl')">Collapsé</button>
             </div>
           </div>
         </div>
@@ -337,7 +339,7 @@ select{background:var(--bg3);border:1px solid var(--border);color:var(--text);pa
           <div class="abar" id="abar-reverb"></div>
           <div class="hdr-r">
             <div class="dwrap"><canvas id="dw-rev" width="38" height="38" class="dknob" data-id="rev" data-val="20"></canvas><div class="dlbl" id="dl-rev">20%</div></div>
-            <button class="bp on" id="bp-rev" onclick="toggleBP('rev',this)"></button>
+            <button class="bp on" id="bp-rev" onclick="toggleBP('rev',this)">Bypass</button>
           </div>
         </div>
         <div class="wbtns" id="rev-types"><button class="wb on" onclick="setRevType(this,'chamber')">Chamber</button><button class="wb" onclick="setRevType(this,'plate')">Plate</button><button class="wb" onclick="setRevType(this,'spring')">Spring</button><button class="wb" onclick="setRevType(this,'room')">Room</button><button class="wb" onclick="setRevType(this,'hall')">Hall</button><button class="wb" onclick="setRevType(this,'church')">Church</button><button class="wb" onclick="setRevType(this,'conv')">Conv.</button></div>
@@ -362,7 +364,7 @@ select{background:var(--bg3);border:1px solid var(--border);color:var(--text);pa
           <div class="abar" id="abar-delay"></div>
           <div class="hdr-r">
             <div class="dwrap"><canvas id="dw-del" width="38" height="38" class="dknob" data-id="del" data-val="35"></canvas><div class="dlbl" id="dl-del">35%</div></div>
-            <button class="bp on" id="bp-del" onclick="toggleBP('del',this)"></button>
+            <button class="bp on" id="bp-del" onclick="toggleBP('del',this)">Bypass</button>
           </div>
         </div>
         <div style="margin-bottom:8px"><div class="st">Style</div><select id="del-style" style="width:220px" onchange="rebuildIfPlay('del')"><option value="stereo">Stereo Delay</option><option value="pingpong">Ping-Pong</option><option value="tap">Tap Delay</option><option value="analog">Analog BBD</option><option value="tape">Tape Echo</option><option value="slapback">Slapback</option><option value="filtered">Filtered</option><option value="modulated">Modulated</option></select></div>
@@ -386,7 +388,7 @@ select{background:var(--bg3);border:1px solid var(--border);color:var(--text);pa
           <div class="abar" id="abar-mod"></div>
           <div class="hdr-r">
             <div class="dwrap"><canvas id="dw-mod" width="38" height="38" class="dknob" data-id="mod" data-val="60"></canvas><div class="dlbl" id="dl-mod">60%</div></div>
-            <button class="bp on" id="bp-mod" onclick="toggleBP('mod',this)"></button>
+            <button class="bp on" id="bp-mod" onclick="toggleBP('mod',this)">Bypass</button>
           </div>
         </div>
         <div class="wbtns" id="mod-types"><button class="wb on" onclick="setModType(this,'chorus')">Chorus</button><button class="wb" onclick="setModType(this,'phaser')">Phaser</button><button class="wb" onclick="setModType(this,'flanger')">Flanger</button><button class="wb" onclick="setModType(this,'tremolo')">Tremolo</button><button class="wb" onclick="setModType(this,'vibrato')">Vibrato</button></div>
@@ -409,7 +411,7 @@ select{background:var(--bg3);border:1px solid var(--border);color:var(--text);pa
           <div class="abar" id="abar-tape"></div>
           <div class="hdr-r">
             <div class="dwrap"><canvas id="dw-tape" width="38" height="38" class="dknob" data-id="tape" data-val="100"></canvas><div class="dlbl" id="dl-tape">100%</div></div>
-            <button class="bp on" id="bp-tape" onclick="toggleBP('tape',this)"></button>
+            <button class="bp on" id="bp-tape" onclick="toggleBP('tape',this)">Bypass</button>
           </div>
         </div>
         <div class="tc">
@@ -1241,7 +1243,7 @@ function buildEQStrips() {
     const isSh = b.type.startsWith('shelf');
     const s = document.createElement('div'); s.className = 'eqs' + (b.on ? '' : ' off'); s.id = 'eqs-' + i;
     s.innerHTML = `<div style="font-size:8px;font-weight:600;color:${BC[i]}">${b.name}</div>
-      <button class="eqon ${b.on?'on':''}" onclick="toggleEQBand(${i},this)" style="pointer-events:all!important"></button>
+      <button class="eqon ${b.on?'on':''}" onclick="toggleEQBand(${i},this)" style="pointer-events:all!important;width:auto"></button>
       <div style="font-size:7px;color:var(--muted)">Freq</div>
       <input type="range" style="width:88%;height:2px" min="0" max="1" value="${f2l(b.f)}" step=".001" oninput="setEQP(${i},'f',this.value)">
       <div style="font-size:8px;color:var(--led);font-family:var(--mono)" id="ef-${i}">${fmtHz(b.f)}</div>
@@ -1440,17 +1442,28 @@ function drawEQ() {
     ctx.shadowBlur=0; ctx.strokeStyle='rgba(90,180,220,.7)'; ctx.lineWidth=1.5; ctx.setLineDash([5,3]); ctx.stroke(); ctx.setLineDash([]);
     ctx.fillStyle='rgba(90,180,220,.7)'; ctx.font='8px Space Grotesk'; ctx.textAlign='right'; ctx.fillText('Phase',W-4,14);
   }
-  // Dots
+  // Dots avec glow renforcé
   eqBands.forEach((b,i) => {
     if (!b.on) return;
     const x = f2l(b.f)*W;
     const db = (b.type==='bell'||b.type.startsWith('shelf')) ? b.g : 0;
     const y = H/2 - db/15*(H/2-10);
-    ctx.shadowColor = BC[i]; ctx.shadowBlur = 7;
-    ctx.beginPath(); ctx.arc(x,y,7,0,Math.PI*2); ctx.fillStyle=BC[i]; ctx.fill();
-    ctx.shadowBlur = 0; ctx.beginPath(); ctx.arc(x,y,7,0,Math.PI*2);
-    ctx.strokeStyle='rgba(255,255,255,.2)'; ctx.lineWidth=1.5; ctx.stroke();
+    // Halo large (glow externe)
+    ctx.shadowColor = BC[i]; ctx.shadowBlur = 18;
+    ctx.beginPath(); ctx.arc(x,y,8,0,Math.PI*2);
+    ctx.fillStyle = BC[i]+'55'; ctx.fill();
+    // Corps du dot
+    ctx.shadowBlur = 10;
+    ctx.beginPath(); ctx.arc(x,y,6,0,Math.PI*2); ctx.fillStyle=BC[i]; ctx.fill();
+    // Reflet interne
+    ctx.shadowBlur = 0;
+    ctx.beginPath(); ctx.arc(x,y,6,0,Math.PI*2);
+    ctx.strokeStyle='rgba(255,255,255,.35)'; ctx.lineWidth=1.5; ctx.stroke();
+    // Point blanc central (brillance)
+    ctx.beginPath(); ctx.arc(x-2,y-2,1.8,0,Math.PI*2);
+    ctx.fillStyle='rgba(255,255,255,.6)'; ctx.fill();
   });
+  ctx.shadowBlur = 0;
   // Interaction
   cv.style.cursor = 'default';
   cv.onmousedown = e => {
@@ -1768,94 +1781,271 @@ function drawCC(ctx,W,H,m){
 }
 
 // ── Gate ───────────────────────────────────────────────────────────────────
-let gThr=-40, gRng=40, gM='gate', gView='tr', gActIn=[], gActOut=[];
-function setG(p,v){const el=document.getElementById('g-'+p);if(el)el.textContent=parseFloat(v).toFixed(0)+(p.includes('thr')||p.includes('rng')?' dB':' ms');if(p==='thr')gThr=+v;if(p==='rng')gRng=+v;drawGate();rebuildIfPlay('gate');}
-function setGV(v){gView=v;['tr','mn','ac'].forEach(x=>document.getElementById('gv-'+x).classList.toggle('on',x===v));drawGate();}
+let gThr=-40, gRng=40, gM='gate', gView='tr', gActIn=[], gActOut=[], gActGR=[];
+let gSmIn=-80, gSmOut=-80, gSmGR=0;
+function setG(p,v){
+  const el=document.getElementById('g-'+p);
+  if(el)el.textContent=parseFloat(v).toFixed(0)+(p==='thr'||p==='rng'?' dB':' ms');
+  if(p==='thr')gThr=+v;if(p==='rng')gRng=+v;
+  drawGate();rebuildIfPlay('gate');
+}
+function setGV(v){
+  gView=v;
+  ['tr','ac','cl'].forEach(x=>document.getElementById('gv-'+x)?.classList.toggle('on',x===v));
+  gActIn=[];gActOut=[];gActGR=[];
+  drawGate();
+}
 let gateRaf=null;
+
+// Mesure les niveaux audio du gate (lissés)
+function gMeters(){
+  const hasSig=PLR.gate?.playing;
+  if(hasSig&&PLR.gate?.anal){
+    const td=new Float32Array(PLR.gate.anal.fftSize||2048);
+    PLR.gate.anal.getFloatTimeDomainData(td);
+    let rms=0;for(let i=0;i<td.length;i++)rms+=td[i]*td[i];
+    rms=Math.sqrt(rms/td.length);
+    const raw=rms>0.00001?20*Math.log10(rms):-80;
+    gSmIn+=(raw-gSmIn)*0.18;
+  } else {
+    gSmIn+=(-80-gSmIn)*0.06;
+  }
+  const open=gSmIn>gThr;
+  const targetGR=open?0:gRng;
+  gSmGR+=(targetGR-gSmGR)*0.12;
+  gSmOut+=((gSmIn-gSmGR)-gSmOut)*0.18;
+  return{in:gSmIn,gr:gSmGR,out:gSmOut,open};
+}
+
 function drawGate(){
   cancelAnimationFrame(gateRaf);
   const cv=document.getElementById('gate-cv');if(!cv)return;
-  const S=Math.min(cv.parentElement?.offsetWidth||176,192);cv.width=S;cv.height=S;
-  const ctx=cv.getContext('2d');ctx.clearRect(0,0,S,S);ctx.fillStyle='#060c16';ctx.fillRect(0,0,S,S);
-  const hasSig=PLR.gate?.playing;
-  if(gView==='tr'){
-    const pad=28;ctx.strokeStyle='#1e3048';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(pad,4);ctx.lineTo(pad,S-pad);ctx.lineTo(S-4,S-pad);ctx.stroke();
-    ctx.fillStyle='#3a5878';ctx.font='8px Space Mono';ctx.textAlign='center';
-    [-80,-60,-40,-20,0].forEach(db=>{const x=pad+(db+80)/80*(S-pad-4),y=S-pad-(db+80)/80*(S-pad-4);ctx.fillText(db,x,S-pad+10);ctx.fillText(db,pad-8,y+3);ctx.strokeStyle='#0d1c30';ctx.lineWidth=.3;ctx.beginPath();ctx.moveTo(x,4);ctx.lineTo(x,S-pad);ctx.stroke();ctx.beginPath();ctx.moveTo(pad,y);ctx.lineTo(S-4,y);ctx.stroke();});
-    ctx.strokeStyle='#1a3050';ctx.lineWidth=.8;ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(pad,S-pad);ctx.lineTo(S-4,4);ctx.stroke();ctx.setLineDash([]);
-    if(hasSig)drawSpectrum(ctx,S,S,'gate');
-    const tx=pad+(gThr+80)/80*(S-pad-4);ctx.strokeStyle='rgba(63,200,122,.4)';ctx.lineWidth=1;ctx.setLineDash([3,3]);ctx.beginPath();ctx.moveTo(tx,4);ctx.lineTo(tx,S-pad);ctx.stroke();ctx.setLineDash([]);
-    ctx.shadowColor='#3fc87a';ctx.shadowBlur=3;ctx.strokeStyle='#3fc87a';ctx.lineWidth=2.5;ctx.beginPath();
-    for(let xi=0;xi<S-pad-4;xi++){const dbIn=-80+xi/(S-pad-4)*80;const dbOut=gM==='expander'?(dbIn<gThr?dbIn-gRng*.5:dbIn):(dbIn<gThr?dbIn-gRng:dbIn);const x=pad+xi,y=S-pad-(Math.max(-80,dbOut)+80)/80*(S-pad-4);xi===0?ctx.moveTo(x,Math.max(4,Math.min(S-pad,y))):ctx.lineTo(x,Math.max(4,Math.min(S-pad,y)));}
-    ctx.stroke();ctx.shadowBlur=0;
-    if(hasSig)gateRaf=requestAnimationFrame(drawGate);
-  } else if(gView==='mn'){
-    const mw=10,gap=22,sx=(S-3*mw-2*gap)/2,mh=S-48;
-    ctx.fillStyle='#3a5878';ctx.font='7px Space Mono';ctx.textAlign='right';
-    [-40,-30,-20,-10,0].forEach(db=>{const y=10+mh*(1-((db+40)/40));if(y>8&&y<10+mh)ctx.fillText(db,sx-3,y+3);});
-    const open=gThr>-65;const inV=hasSig?50+Math.sin(Date.now()/400)*20:0;const grV=open?0:55;const outV=open?inV:2;
-    [inV,grV,outV].forEach((v,i)=>{const x=sx+i*(mw+gap);ctx.fillStyle='#0e1e30';ctx.fillRect(x,10,mw,mh);const hh=Math.min(1,v/100)*mh;ctx.fillStyle=i===1?'#3fc87a':'#C4893A';ctx.fillRect(x,10+mh-hh,mw,hh);ctx.fillStyle='#3a5878';ctx.font='8px Space Grotesk';ctx.textAlign='center';ctx.fillText(['IN','GR','OUT'][i],x+mw/2,S-8);});
-    ctx.beginPath();ctx.arc(S/2,S-22,5,0,Math.PI*2);ctx.fillStyle=open?'#3fc87a':'#d04040';ctx.fill();
-    if(hasSig)setTimeout(drawGate,60);
-  } else {
-    // Activité Gate — style Ableton (dBFS, 0dBFS en haut)
-    const N=S;
-    const hasSigG=PLR.gate?.playing;
-    let dbInG=-80;
-    if(hasSigG&&PLR.gate?.anal){
-      const td=new Float32Array(PLR.gate.anal.fftSize);
-      PLR.gate.anal.getFloatTimeDomainData(td);
-      let rms=0;for(let i=0;i<td.length;i++)rms+=td[i]*td[i];
-      rms=Math.sqrt(rms/td.length);
-      dbInG=rms>0.0001?20*Math.log10(rms):-80;
-    } else {
-      const t=Date.now()/1000;
-      dbInG=-22+Math.sin(t*3.1)*12+Math.random()*4-2;
-    }
-    const openG=dbInG>gThr;
-    const dbOutG=openG?dbInG:dbInG-gRng;
-    gActIn.push(dbInG);gActOut.push(dbOutG);
-    if(gActIn.length>N){gActIn.shift();gActOut.shift();}
-    const dbRangeG=60;
-    const dToYG=db=>S*Math.max(0,Math.min(1,1-(db+dbRangeG)/dbRangeG));
-    // Fond
-    ctx.fillStyle='#07121e';ctx.fillRect(0,0,S,S);
-    // Grille dBFS
-    ctx.lineWidth=0.5;
-    [-6,-12,-18,-24,-36,-48].forEach(db=>{
-      const y=dToYG(db);
-      ctx.strokeStyle='#0d1c2e';ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(S,y);ctx.stroke();
-      ctx.fillStyle='#2a4060';ctx.font='7px Space Mono';ctx.textAlign='left';ctx.fillText(db,2,y-1);
-    });
-    ctx.fillStyle='#2a4060';ctx.font='7px Space Grotesk';ctx.textAlign='right';ctx.fillText('0dBFS',S-2,8);
-    // Spectre
-    if(hasSigG)drawSpectrum(ctx,S,S,'gate');
-    // Seuil
-    const tyG=dToYG(gThr);
-    ctx.strokeStyle='rgba(63,200,122,.7)';ctx.lineWidth=1;ctx.setLineDash([5,3]);
-    ctx.beginPath();ctx.moveTo(0,tyG);ctx.lineTo(S,tyG);ctx.stroke();ctx.setLineDash([]);
-    ctx.fillStyle='rgba(63,200,122,.9)';ctx.font='7px Space Mono';ctx.textAlign='right';
-    ctx.fillText('T '+gThr+'dB',S-2,tyG-2);
-    // Indicateur ouvert/fermé
-    ctx.beginPath();ctx.arc(S/2,S-14,5,0,Math.PI*2);
-    ctx.fillStyle=openG?'#3fc87a':'#d04040';ctx.fill();
-    // Signal In (gris-bleu)
-    ctx.strokeStyle='rgba(160,195,235,.7)';ctx.lineWidth=1.5;ctx.beginPath();
-    gActIn.forEach((db,i)=>{const x=i/(N-1)*S,y=dToYG(db);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
-    ctx.stroke();
-    // Signal Out (vert)
-    ctx.strokeStyle='rgba(63,200,122,.9)';ctx.lineWidth=1.5;ctx.beginPath();
-    gActOut.forEach((db,i)=>{const x=i/(N-1)*S,y=dToYG(db);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
-    ctx.stroke();
-    // Légende
-    ctx.fillStyle='rgba(160,195,235,.8)';ctx.fillRect(4,5,8,2);
-    ctx.fillStyle='#8ab0cc';ctx.font='7px Space Grotesk';ctx.textAlign='left';ctx.fillText('In',14,9);
-    ctx.fillStyle='rgba(63,200,122,.9)';ctx.fillRect(4,15,8,2);
-    ctx.fillStyle='#8ab0cc';ctx.fillText('Out',14,19);
-    requestAnimationFrame(()=>{if(gView==='ac'&&document.getElementById('t-gate')?.classList.contains('on'))drawGate();});
+  const W=cv.parentElement?.offsetWidth||200;
+  const H=200;
+  cv.width=W;cv.height=H;
+  const ctx=cv.getContext('2d');
+  ctx.fillStyle='#060c16';ctx.fillRect(0,0,W,H);
+  const m=gMeters();
+  if(gView==='ac'){
+    gActIn.push(m.in);gActOut.push(m.out);gActGR.push(m.gr);
+    if(gActIn.length>W){gActIn.shift();gActOut.shift();gActGR.shift();}
   }
+  if(gView==='tr') drawGT(ctx,W,H,m);
+  else if(gView==='ac') drawGA(ctx,W,H,m);
+  else drawGC(ctx,W,H,m);
+  const active=document.getElementById('t-gate')?.classList.contains('on');
+  if(active) gateRaf=requestAnimationFrame(drawGate);
 }
-setInterval(()=>{if(gView==='mn'&&document.getElementById('t-gate')?.classList.contains('on'))drawGate();},70);
+
+// VU bar helper vert pour le gate
+function vuBarG(ctx,x,y,w,h,norm,grMode){
+  ctx.fillStyle='#070e1a';ctx.fillRect(x,y,w,h);
+  ctx.strokeStyle='#0e1d30';ctx.lineWidth=0.8;ctx.strokeRect(x,y,w,h);
+  const fh=Math.min(1,Math.max(0,norm))*h;
+  if(fh>0){
+    if(grMode){
+      ctx.fillStyle='#2a6640';ctx.fillRect(x,y,w,fh);
+    } else {
+      const g=ctx.createLinearGradient(0,y,0,y+h);
+      g.addColorStop(0,'#cc3535');g.addColorStop(0.15,'#d07020');
+      g.addColorStop(0.35,'#d4c820');g.addColorStop(0.6,'#3fc87a');g.addColorStop(1,'#175c30');
+      ctx.fillStyle=g;ctx.fillRect(x,y+h-fh,w,fh);
+    }
+  }
+  ctx.strokeStyle='rgba(0,0,0,.4)';ctx.lineWidth=0.7;
+  (grMode?[10,20,30,40,60,80]:[-3,-6,-12,-18,-24,-36]).forEach(d=>{
+    const ny=grMode?y+d/80*h:y+h*(1-(d+60)/60);
+    if(ny>y+1&&ny<y+h-1){ctx.beginPath();ctx.moveTo(x,ny);ctx.lineTo(x+w,ny);ctx.stroke();}
+  });
+}
+
+// ── Vue Transfert Gate ──────────────────────────────────────────────────────
+function drawGT(ctx,W,H,m){
+  const vuW=12,arW=8;
+  const lPad=6+vuW+arW+10;
+  const rPad=(arW+6)+vuW+6+vuW+arW+6;
+  const pT=16,pB=15;
+  const cX=lPad,cY=pT,cW=W-lPad-rPad,cH=H-pT-pB;
+  // Zone courbe
+  ctx.fillStyle='#030c10';ctx.fillRect(cX,cY,cW,cH);
+  ctx.strokeStyle='#0d1e28';ctx.lineWidth=1;ctx.strokeRect(cX,cY,cW,cH);
+  // Grille
+  ctx.lineWidth=0.5;
+  for(let db=-80;db<=0;db+=20){
+    const gx=cX+(db+80)/80*cW, gy=cY+cH-(db+80)/80*cH;
+    ctx.strokeStyle=db===0?'#0f2030':'#081520';
+    ctx.beginPath();ctx.moveTo(gx,cY);ctx.lineTo(gx,cY+cH);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(cX,gy);ctx.lineTo(cX+cW,gy);ctx.stroke();
+    if(db%40===0){ctx.fillStyle='#1a3040';ctx.font='7px Space Mono';ctx.textAlign='center';ctx.fillText(db===0?'0':db,gx,cY+cH+10);}
+  }
+  // Diagonale unité
+  ctx.strokeStyle='#0a1c2a';ctx.lineWidth=0.8;ctx.setLineDash([5,7]);
+  ctx.beginPath();ctx.moveTo(cX,cY+cH);ctx.lineTo(cX+cW,cY);ctx.stroke();ctx.setLineDash([]);
+  // Zone seuil
+  const txLine=cX+(gThr+80)/80*cW;
+  ctx.fillStyle='rgba(63,200,122,.04)';ctx.fillRect(txLine,cY,cX+cW-txLine,cH);
+  ctx.setLineDash([3,5]);ctx.lineWidth=0.8;ctx.strokeStyle='rgba(63,200,122,.3)';
+  ctx.beginPath();ctx.moveTo(txLine,cY);ctx.lineTo(txLine,cY+cH);ctx.stroke();ctx.setLineDash([]);
+  // Courbe de transfert (vert)
+  ctx.beginPath();
+  for(let xi=0;xi<=cW;xi++){
+    const di=-80+xi/cW*80;
+    const dbOut=gM==='expander'?(di<gThr?di-gRng*.5:di):(di<gThr?Math.max(-80,di-gRng):di);
+    const x=cX+xi, y=cY+cH-(Math.max(-80,dbOut)+80)/80*cH;
+    xi===0?ctx.moveTo(x,Math.max(cY,y)):ctx.lineTo(x,Math.max(cY,y));
+  }
+  ctx.shadowColor='#3fc87a';ctx.shadowBlur=4;ctx.strokeStyle='#3fc87a';ctx.lineWidth=1.8;ctx.stroke();ctx.shadowBlur=0;
+  // Point signal live
+  const di=Math.max(-80,Math.min(-0.1,m.in));
+  const dbOut=gM==='expander'?(di<gThr?di-gRng*.5:di):(di<gThr?Math.max(-80,di-gRng):di);
+  const dx=cX+(di+80)/80*cW, dy=Math.max(cY+2,cY+cH-(Math.max(-80,dbOut)+80)/80*cH);
+  ctx.beginPath();ctx.arc(dx,dy,6,0,Math.PI*2);ctx.strokeStyle='#3fc87a';ctx.lineWidth=1.5;ctx.stroke();
+  ctx.beginPath();ctx.arc(dx,dy,2.5,0,Math.PI*2);ctx.fillStyle='#3fc87a';ctx.fill();
+  // Indicateur gate open/close
+  ctx.beginPath();ctx.arc(cX+cW-8,cY+8,4,0,Math.PI*2);
+  ctx.fillStyle=m.open?'#3fc87a':'#d04040';ctx.fill();
+  // ── VU In (gauche) ──
+  const tvX=6,tvY=cY,tvH=cH;
+  vuBarG(ctx,tvX,tvY,vuW,tvH,(m.in+60)/60,false);
+  const tny=tvY+tvH*(1-(gThr+60)/60);
+  if(tny>=tvY&&tny<=tvY+tvH){ctx.strokeStyle='#3fc87a';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(tvX,tny);ctx.lineTo(tvX+vuW,tny);ctx.stroke();}
+  const tay=Math.max(tvY+4,Math.min(tvY+tvH-4,tvY+tvH*(1-(m.in+60)/60)));
+  ctx.fillStyle='#4a7858';ctx.beginPath();ctx.moveTo(tvX+vuW+1,tay-3.5);ctx.lineTo(tvX+vuW+arW,tay);ctx.lineTo(tvX+vuW+1,tay+3.5);ctx.closePath();ctx.fill();
+  ctx.fillStyle='#2a4840';ctx.font='8px Space Grotesk';ctx.textAlign='center';ctx.fillText('In',tvX+vuW/2,cY-4);
+  ctx.fillStyle='#4a7858';ctx.font='7px Space Mono';ctx.textAlign='center';ctx.fillText(m.in.toFixed(1),tvX+vuW/2,cY+tvH+11);
+  // ── VU GR (droite, premier) ──
+  const grX=W-rPad+(arW+6),grY=cY,grH2=cH;
+  const grNorm=Math.min(1,m.gr/80);
+  vuBarG(ctx,grX,grY,vuW,grH2,grNorm,true);
+  const gay=Math.max(grY+4,Math.min(grY+grH2-4,grY+grNorm*grH2));
+  ctx.fillStyle='#2a4840';ctx.beginPath();ctx.moveTo(grX-1,gay-3.5);ctx.lineTo(grX-arW+1,gay);ctx.lineTo(grX-1,gay+3.5);ctx.closePath();ctx.fill();
+  ctx.fillStyle='#2a4840';ctx.font='8px Space Grotesk';ctx.textAlign='center';ctx.fillText('GR',grX+vuW/2,grY-4);
+  ctx.fillStyle='#4a7858';ctx.font='7px Space Mono';ctx.textAlign='center';ctx.fillText('-'+m.gr.toFixed(1),grX+vuW/2,grY+grH2+11);
+  // ── VU Out (droite, second) ──
+  const ovX=W-vuW-arW-6,ovY=cY,ovH=cH;
+  vuBarG(ctx,ovX,ovY,vuW,ovH,(m.out+60)/60,false);
+  const oay=Math.max(ovY+4,Math.min(ovY+ovH-4,ovY+ovH*(1-(m.out+60)/60)));
+  ctx.fillStyle='#4a7858';ctx.beginPath();ctx.moveTo(ovX+vuW+1,oay-3.5);ctx.lineTo(ovX+vuW+arW,oay);ctx.lineTo(ovX+vuW+1,oay+3.5);ctx.closePath();ctx.fill();
+  ctx.fillStyle='#2a4840';ctx.font='8px Space Grotesk';ctx.textAlign='center';ctx.fillText('Out',ovX+vuW/2,ovY-4);
+  ctx.fillStyle='#4a7858';ctx.font='7px Space Mono';ctx.textAlign='center';ctx.fillText((m.out>=0?'+':'')+m.out.toFixed(1),ovX+vuW/2,ovY+ovH+11);
+}
+
+// ── Vue Activité Gate ───────────────────────────────────────────────────────
+function drawGA(ctx,W,H,m){
+  const N=W,hH=18;
+  ctx.fillStyle='#030b10';ctx.fillRect(0,0,W,hH);
+  ctx.strokeStyle='#0a1c28';ctx.lineWidth=0.5;ctx.beginPath();ctx.moveTo(0,hH);ctx.lineTo(W,hH);ctx.stroke();
+  ctx.font='8px Space Grotesk';ctx.textAlign='left';ctx.fillStyle='#2a4840';ctx.fillText('Seuil',5,12);
+  ctx.fillStyle='#4a7858';ctx.font='8px Space Mono';ctx.fillText(gThr+' dB',36,12);
+  ctx.fillStyle='#2a4840';ctx.font='8px Space Grotesk';ctx.textAlign='right';ctx.fillText('Out',W-52,12);
+  ctx.fillStyle='#4a7858';ctx.font='8px Space Mono';ctx.fillText((m.out>=0?'+':'')+m.out.toFixed(1)+' dB',W-4,12);
+  // Zones : 25% GR haut / 75% waveform bas
+  const aY=hH,aH=H-hH;
+  const grH=Math.floor(aH*0.25),wvY=aY+grH,wvH=aH-grH;
+  ctx.fillStyle='#040e18';ctx.fillRect(0,aY,W,grH);
+  ctx.fillStyle='#030c14';ctx.fillRect(0,wvY,W,wvH);
+  ctx.strokeStyle='#0a1c28';ctx.lineWidth=0.7;ctx.beginPath();ctx.moveTo(0,wvY);ctx.lineTo(W,wvY);ctx.stroke();
+  // Référence 0 GR
+  ctx.strokeStyle='rgba(255,255,255,.08)';ctx.lineWidth=0.7;ctx.setLineDash([3,8]);
+  ctx.beginPath();ctx.moveTo(0,aY+2);ctx.lineTo(W,aY+2);ctx.stroke();ctx.setLineDash([]);
+  // GR fill+courbe (vert)
+  const grRange=80;
+  const grToY=g=>aY+Math.min(grH-2,g/grRange*(grH-2));
+  if(gActGR.length>1){
+    ctx.beginPath();ctx.moveTo(0,aY);
+    gActGR.forEach((g,i)=>ctx.lineTo(i/(N-1)*W,grToY(g)));
+    ctx.lineTo(W-1,aY);ctx.closePath();ctx.fillStyle='rgba(63,200,122,.12)';ctx.fill();
+    ctx.beginPath();
+    gActGR.forEach((g,i)=>{const x=i/(N-1)*W,y=grToY(g);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+    ctx.strokeStyle='#3fc87a';ctx.lineWidth=1.5;ctx.stroke();
+  }
+  // Waveform (mapping dB-range pour grande visibilité)
+  const mid=wvY+wvH/2, amp=wvH*0.48;
+  const dbToV=db=>Math.max(0,Math.min(1,(Math.max(-60,db)+60)/60));
+  const tv=dbToV(gThr);
+  // Waveform In (dessinée en premier)
+  if(gActIn.length>1){
+    const pts=gActIn.map(db=>dbToV(db));
+    ctx.beginPath();
+    ctx.moveTo(0,mid-pts[0]*amp);
+    pts.forEach((v,i)=>ctx.lineTo(i/(N-1)*W,mid-v*amp));
+    ctx.lineTo((pts.length-1)/(N-1)*W,mid+pts[pts.length-1]*amp);
+    pts.slice().reverse().forEach((v,i)=>ctx.lineTo((pts.length-1-i)/(N-1)*W,mid+v*amp));
+    ctx.closePath();ctx.fillStyle='rgba(63,200,122,.15)';ctx.fill();
+    ctx.beginPath();pts.forEach((v,i)=>i===0?ctx.moveTo(0,mid-v*amp):ctx.lineTo(i/(N-1)*W,mid-v*amp));
+    ctx.strokeStyle='rgba(63,200,122,.55)';ctx.lineWidth=1.2;ctx.stroke();
+    ctx.beginPath();pts.forEach((v,i)=>i===0?ctx.moveTo(0,mid+v*amp):ctx.lineTo(i/(N-1)*W,mid+v*amp));
+    ctx.strokeStyle='rgba(63,200,122,.2)';ctx.lineWidth=0.8;ctx.stroke();
+  }
+  // Ligne seuil VERTE (par-dessus la waveform)
+  ctx.strokeStyle='rgba(63,200,122,.85)';ctx.lineWidth=1.2;ctx.setLineDash([6,4]);
+  ctx.beginPath();ctx.moveTo(0,mid-tv*amp);ctx.lineTo(W,mid-tv*amp);ctx.stroke();
+  ctx.strokeStyle='rgba(63,200,122,.3)';ctx.lineWidth=0.8;
+  ctx.beginPath();ctx.moveTo(0,mid+tv*amp);ctx.lineTo(W,mid+tv*amp);ctx.stroke();
+  ctx.setLineDash([]);
+  // Indicateur gate open/close
+  const ledColor=m.open?'#3fc87a':'#d04040';
+  ctx.beginPath();ctx.arc(W-10,H-10,4,0,Math.PI*2);ctx.fillStyle=ledColor;ctx.fill();
+  ctx.fillStyle='rgba(229,168,78,.7)';ctx.font='9px Space Mono';ctx.textAlign='right';
+  ctx.fillText((m.out>=0?'+':'')+m.out.toFixed(1)+' dB',W-18,H-5);
+}
+
+// ── Vue Collapsée Gate ──────────────────────────────────────────────────────
+function drawGC(ctx,W,H,m){
+  const topP=15,botP=13,arW=7,scaleW=18;
+  const vuW=10;
+  const vuH=H-topP-botP;
+  const blkW=scaleW+vuW+arW;
+  const totalBlk=3*blkW;
+  const gap=Math.max(4,Math.floor((W-totalBlk)/4));
+  const bx=[gap, gap*2+blkW, gap*3+blkW*2];
+  const meters=[
+    {bx:bx[0],db:m.in, gr:false,lbl:'In',   thr:gThr, fmt:m.in.toFixed(1)},
+    {bx:bx[1],db:m.gr, gr:true, lbl:'GR',   thr:null, fmt:'-'+m.gr.toFixed(1)},
+    {bx:bx[2],db:m.out,gr:false,lbl:'Out',  thr:null, fmt:(m.out>=0?'+':'')+m.out.toFixed(1)},
+  ];
+  const sigTicks=[-3,-6,-12,-18,-24,-36,-48];
+  const grTicks=[10,20,30,40,60,80];
+
+  meters.forEach(({bx,db,gr,lbl,thr,fmt})=>{
+    const norm=gr?Math.min(1,m.gr/80):(db+60)/60;
+    const vx=bx+scaleW;
+    // Échelle dB
+    ctx.font='6px Space Mono';ctx.textAlign='right';
+    const ticks=gr?grTicks:sigTicks;
+    ticks.forEach(d=>{
+      const ty=gr?topP+(d/80)*vuH:topP+vuH*(1-(d+60)/60);
+      if(ty<topP||ty>topP+vuH)return;
+      ctx.fillStyle='#3a6050';
+      ctx.fillText(gr?'-'+d:d,vx-2,ty+2);
+      ctx.strokeStyle='rgba(58,96,80,.5)';ctx.lineWidth=0.5;
+      ctx.beginPath();ctx.moveTo(vx-2,ty);ctx.lineTo(vx,ty);ctx.stroke();
+    });
+    // Barre VU
+    vuBarG(ctx,vx,topP,vuW,vuH,norm,gr);
+    // Marqueur seuil
+    if(thr!==null){
+      const ty=topP+vuH*(1-(thr+60)/60);
+      if(ty>=topP&&ty<=topP+vuH){
+        ctx.strokeStyle='#3fc87a';ctx.lineWidth=1.5;
+        ctx.beginPath();ctx.moveTo(vx,ty);ctx.lineTo(vx+vuW,ty);ctx.stroke();
+      }
+    }
+    // Flèche indicateur
+    const ay=Math.max(topP+4,Math.min(topP+vuH-4,gr?topP+norm*vuH:topP+vuH*(1-norm)));
+    ctx.fillStyle='#3a6050';
+    ctx.beginPath();ctx.moveTo(vx+vuW+1,ay-3.5);ctx.lineTo(vx+vuW+arW,ay);ctx.lineTo(vx+vuW+1,ay+3.5);ctx.closePath();ctx.fill();
+    // Label
+    ctx.fillStyle='#2a4840';ctx.font='8px Space Grotesk';ctx.textAlign='center';
+    ctx.fillText(lbl,vx+vuW/2,topP-4);
+    // Valeur
+    ctx.fillStyle='#4a7858';ctx.font='7px Space Mono';ctx.textAlign='center';
+    ctx.fillText(fmt,vx+vuW/2,H-3);
+  });
+  // Indicateur gate open/close au centre
+  const ledColor=m.open?'#3fc87a':'#d04040';
+  ctx.beginPath();ctx.arc(W/2,topP-5,3,0,Math.PI*2);ctx.fillStyle=ledColor;ctx.fill();
+}
 
 // ── Reverb ─────────────────────────────────────────────────────────────────
 let rDc=1.5, rDm=50, rPd=20;
