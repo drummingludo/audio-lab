@@ -134,6 +134,8 @@ select{background:var(--bg3);border:1px solid var(--border);color:var(--text);pa
 .qfb.ok{color:var(--green);}.qfb.ko{color:var(--red);}
 .ptbtn{background:#1e2d40;border:1px solid var(--cdim);color:var(--clight);padding:7px 22px;font-size:11px;cursor:pointer;border-radius:5px;font-family:var(--font);font-weight:500;margin:4px;}
 .ptbtn.playing{background:var(--cdim);color:var(--led);}
+/* BYPASSED — grise tous les paramètres sauf le header */
+.card.bypassed>*:not(.hdr){opacity:.32;pointer-events:none;transition:opacity .2s;}
 /* ACCOUNT */
 .atabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:16px;}
 .atab{padding:8px 14px;cursor:pointer;color:var(--muted);font-size:11px;letter-spacing:1px;text-transform:uppercase;border-bottom:2px solid transparent;transition:all .15s;}
@@ -210,7 +212,7 @@ select{background:var(--bg3);border:1px solid var(--border);color:var(--text);pa
     <!-- SIGNAL GEN -->
     <div class="tool on" id="t-siggen">
       <div class="card">
-        <div class="hdr"><div class="hdr-r"><button class="bp on" id="bp-sig" onclick="this.classList.toggle('on')">Bypass</button></div></div>
+        <div class="hdr"><div class="hdr-r"><button class="bp on" id="bp-sig" onclick="this.classList.toggle('on');this.closest('.card').classList.toggle('bypassed',!this.classList.contains('on'))">Bypass</button></div></div>
         <div class="tc">
           <div>
             <div class="wbtns">
@@ -243,7 +245,7 @@ select{background:var(--bg3);border:1px solid var(--border);color:var(--text);pa
           </div>
         </div>
         <div style="display:flex;gap:6px;margin-bottom:6px;align-items:center;flex-wrap:wrap">
-          <button class="cvb" id="phase-btn" onclick="togglePhase()" style="display:none">∿ Phase</button>
+          <button class="cvb" id="phase-btn" onclick="togglePhase()">∿ Phase</button>
           <span style="font-size:9px;color:var(--muted)">Drag=Freq+Gain · Shift+Drag=Q</span>
         </div>
         <canvas id="eq-cv" class="vc" height="170" style="cursor:default"></canvas>
@@ -311,7 +313,6 @@ select{background:var(--bg3);border:1px solid var(--border);color:var(--text);pa
             <button class="bp on" id="bp-gate" onclick="toggleBP('gate',this)">Bypass</button>
           </div>
         </div>
-        <div class="wbtns"><button class="wb on" onclick="setBG(this);gM='gate'">Gate</button><button class="wb" onclick="setBG(this);gM='expander'">Expander</button></div>
         <div class="tc">
           <div>
             <div class="slr"><span class="sll">Threshold</span><input type="range" min="-80" max="0" value="-40" oninput="setG('thr',this.value)"><span class="slv" id="g-thr">-40 dB</span></div>
@@ -423,13 +424,8 @@ select{background:var(--bg3);border:1px solid var(--border);color:var(--text);pa
             <div class="slr"><span class="sll">Noise</span><input type="range" min="0" max="100" value="10" oninput="setTape('no',this.value)"><span class="slv" id="t-no">10%</span></div>
             <div class="slr"><span class="sll">Bias</span><input type="range" min="-10" max="10" value="0" step=".5" oninput="setTape('bi',this.value)"><span class="slv" id="t-bi">0 dB</span></div>
           </div>
-          <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
-            <div style="display:flex;justify-content:space-around;align-items:center;width:100%;margin:6px 0">
-              <div id="rl-l" style="width:40px;height:40px;border-radius:50%;border:2px solid var(--border);position:relative"><div id="rli-l" style="position:absolute;inset:6px;border-radius:50%;border:2px solid var(--cdim)"></div></div>
-              <div style="width:28px;height:4px;background:var(--cdim);border-radius:2px"></div>
-              <div id="rl-r" style="width:40px;height:40px;border-radius:50%;border:2px solid var(--border);position:relative"><div id="rli-r" style="position:absolute;inset:6px;border-radius:50%;border:2px solid var(--cdim)"></div></div>
-            </div>
-            <canvas id="tape-cv" class="vc" height="90"></canvas>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+            <canvas id="tape-cv" class="vc" style="width:100%;display:block" height="220"></canvas>
           </div>
         </div>
       </div>
@@ -455,24 +451,52 @@ select{background:var(--bg3);border:1px solid var(--border);color:var(--text);pa
       </div>
     </div>
 
-    <!-- CALIBRATION -->
+    <!-- CALIBRATION / TRIANGLE MAC DOOR -->
     <div class="tool" id="t-calib">
       <div class="card">
-        <div style="font-size:12px;color:var(--clight);font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px">⊛ Calibration — Table Mac Door</div>
-        <p style="font-size:11px;color:var(--dim);margin-bottom:12px;line-height:1.6">Référence SPL pour monitoring studio. Alignement du niveau de sortie analogique par rapport au niveau numérique.</p>
-        <div style="overflow-x:auto">
-          <table class="ctable"><thead><tr><th>Format</th><th>Réf. dBFS</th><th>SPL cible</th><th>Headroom</th><th>Usage</th><th>Statut</th></tr></thead>
-          <tbody id="calib-tbody"></tbody></table>
-        </div>
-        <div style="margin-top:14px">
-          <div class="st">Signal de calibration</div>
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px">
-            <select id="cal-lvl"><option value="-18">-18 dBFS</option><option value="-20">-20 dBFS</option><option value="-14">-14 dBFS</option><option value="-9">-9 dBFS</option></select>
-            <select id="cal-frq"><option value="1000">1 kHz</option><option value="440">440 Hz</option><option value="100">100 Hz</option><option value="10000">10 kHz</option></select>
-            <button class="abtn" id="cal-btn" onclick="toggleCalib()">▶ Générer</button>
-            <span style="font-size:10px;color:var(--dim)" id="cal-status">Arrêté</span>
+        <div style="font-size:12px;color:var(--clight);font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">⊛ Triangle Mac Door</div>
+        <p style="font-size:10px;color:var(--dim);margin-bottom:12px;line-height:1.5">Calculateur de positionnement d'enceintes. Entrez vos mesures (en cm) pour vérifier si votre configuration est homologuée <em>Triangle Mac Door</em>.</p>
+        <div class="tc">
+          <!-- Colonne gauche : inputs + résultats -->
+          <div>
+            <div class="st">① Vos mesures</div>
+            <div class="slr"><span class="sll">AB</span><input type="number" id="tmd-ab" value="150" min="50" max="500" step="1" style="background:var(--bg4);border:1px solid var(--cdim);color:var(--led);padding:3px 6px;border-radius:3px;font-family:var(--mono);font-size:10px;width:70px" oninput="calcTMD()"><span class="slv" style="font-size:9px;color:var(--muted)">distance tweeter-tweeter</span></div>
+            <div class="slr"><span class="sll">CA</span><input type="number" id="tmd-ca" value="150" min="50" max="500" step="1" style="background:var(--bg4);border:1px solid var(--cdim);color:var(--led);padding:3px 6px;border-radius:3px;font-family:var(--mono);font-size:10px;width:70px" oninput="calcTMD()"><span class="slv" style="font-size:9px;color:var(--muted)">tweeter → point d'écoute</span></div>
+            <div class="slr"><span class="sll">CG</span><input type="number" id="tmd-cg" value="192" min="50" max="600" step="1" style="background:var(--bg4);border:1px solid var(--cdim);color:var(--led);padding:3px 6px;border-radius:3px;font-family:var(--mono);font-size:10px;width:70px" oninput="calcTMD()"><span class="slv" style="font-size:9px;color:var(--muted)">écoute → point G (face enc.)</span></div>
+            <div class="slr"><span class="sll">AG</span><input type="number" id="tmd-ag" value="101" min="100" max="400" step="1" style="background:var(--bg4);border:1px solid var(--cdim);color:var(--led);padding:3px 6px;border-radius:3px;font-family:var(--mono);font-size:10px;width:70px" oninput="calcTMD()"><span class="slv" style="font-size:9px;color:var(--muted)">tweeter → point G (≥100 cm)</span></div>
+            <div class="st" style="margin-top:10px">② Résultats</div>
+            <table class="ctable" style="font-size:10px;margin-top:4px">
+              <tbody>
+                <tr><td class="hl">AD (= AB/2)</td><td id="tmd-ad">75.0 cm</td></tr>
+                <tr><td class="hl">CD</td><td id="tmd-cd">—</td></tr>
+                <tr><td class="hl">Angle ACB</td><td id="tmd-acb">—</td></tr>
+                <tr><td class="hl">Angle CAD</td><td id="tmd-cad">—</td></tr>
+                <tr><td class="hl">Angle GAC</td><td id="tmd-gac">—</td></tr>
+                <tr><td class="hl">Angle CAE (toe-in)</td><td id="tmd-cae">—</td></tr>
+                <tr><td class="hl">AE</td><td id="tmd-ae">—</td></tr>
+                <tr><td class="hl">CE</td><td id="tmd-ce">—</td></tr>
+              </tbody>
+            </table>
+            <div id="tmd-msg1" style="margin-top:10px;font-size:10px;line-height:1.5;padding:7px;border-radius:4px;border:1px solid var(--border)"></div>
+            <div id="tmd-msg2" style="margin-top:6px;font-size:10px;line-height:1.5;padding:7px;border-radius:4px;border:1px solid var(--border)"></div>
+            <div id="tmd-congrats" style="margin-top:6px;font-size:10px;font-weight:600;padding:7px;border-radius:4px;display:none"></div>
+            <div style="margin-top:8px;font-size:8px;color:var(--muted)">Feuille de calcul créée par Andy Mac Door · <a href="http://www.andymacdoor.com" target="_blank" style="color:var(--cdim)">andymacdoor.com</a></div>
           </div>
-          <canvas id="cal-cv" class="vc" height="46" style="margin-top:8px"></canvas>
+          <!-- Colonne droite : diagramme -->
+          <div>
+            <div class="st">Schéma de configuration</div>
+            <canvas id="tmd-cv" class="vc" height="260" style="margin-top:4px"></canvas>
+            <div style="margin-top:10px;border-top:1px solid var(--border);padding-top:10px">
+              <div class="st">Signal de calibration</div>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px">
+                <select id="cal-lvl"><option value="-18">-18 dBFS</option><option value="-20">-20 dBFS</option><option value="-14">-14 dBFS</option><option value="-9">-9 dBFS</option></select>
+                <select id="cal-frq"><option value="1000">1 kHz</option><option value="440">440 Hz</option><option value="100">100 Hz</option><option value="10000">10 kHz</option></select>
+                <button class="abtn" id="cal-btn" onclick="toggleCalib()">▶ Générer</button>
+                <span style="font-size:10px;color:var(--dim)" id="cal-status">Arrêté</span>
+              </div>
+              <canvas id="cal-cv" class="vc" height="36" style="margin-top:6px"></canvas>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -870,7 +894,7 @@ async function importAudio(input, id) {
   p.buf = buf; p.offset = 0;
   document.getElementById('fn-' + id).textContent = file.name.slice(0, 12);
   updateTime(id, 0);
-  if (id === 'eq') document.getElementById('phase-btn').style.display = 'inline-block';
+  // phase-btn always visible
   if (id === 'loudness') analyseLoudness(buf);
   rebuildChain(id);
   if (was) _play(id);
@@ -979,6 +1003,8 @@ function hwId(id) {
 
 function toggleBP(id, btn) {
   btn.classList.toggle('on');
+  const card = btn.closest('.card');
+  if (card) card.classList.toggle('bypassed', !btn.classList.contains('on'));
   rebuildIfPlay(id);
 }
 
@@ -1282,9 +1308,14 @@ function eqDB(b, f) {
 }
 function eqPhase(b, f) {
   if (!b.on) return 0;
-  if (b.type === 'bell') return -Math.atan2(b.q*(b.f/f - f/b.f), 1) * b.g / 14;
-  if (b.type === 'hpf') return (Math.PI/2 - Math.atan2(f/b.f, 1)) * ((b.oct||12)/6);
-  if (b.type === 'lpf') return -Math.atan2(f/b.f, 1) * ((b.oct||12)/6);
+  const n = (b.oct||12) / 6; // ordre du filtre (1=6dB/oct, 2=12dB/oct…)
+  if (b.type === 'bell') return -Math.atan2(b.q*(b.f/f - f/b.f), 1) * b.g / 8;
+  // HPF : rotation de +n×90° (dc) → 0° (passe-haut) — inversion totale sous la fréquence de coupure
+  if (b.type === 'hpf') return n * (Math.PI/2 - Math.atan(f / b.f));
+  // LPF : rotation de 0° (basses) → -n×90° (hautes) — inversion totale au-dessus de la coupure
+  if (b.type === 'lpf') return -n * Math.atan(f / b.f);
+  if (b.type === 'shelf-lo') return b.g * (Math.PI/4 - Math.atan(f / b.f)) / 7;
+  if (b.type === 'shelf-hi') return b.g * (Math.atan(f / b.f) - Math.PI/4) / 7;
   return 0;
 }
 
@@ -1442,28 +1473,16 @@ function drawEQ() {
     ctx.shadowBlur=0; ctx.strokeStyle='rgba(90,180,220,.7)'; ctx.lineWidth=1.5; ctx.setLineDash([5,3]); ctx.stroke(); ctx.setLineDash([]);
     ctx.fillStyle='rgba(90,180,220,.7)'; ctx.font='8px Space Grotesk'; ctx.textAlign='right'; ctx.fillText('Phase',W-4,14);
   }
-  // Dots avec glow renforcé
+  // Dots — couleur de bande, style simple
   eqBands.forEach((b,i) => {
     if (!b.on) return;
     const x = f2l(b.f)*W;
     const db = (b.type==='bell'||b.type.startsWith('shelf')) ? b.g : 0;
     const y = H/2 - db/15*(H/2-10);
-    // Halo large (glow externe)
-    ctx.shadowColor = BC[i]; ctx.shadowBlur = 18;
-    ctx.beginPath(); ctx.arc(x,y,8,0,Math.PI*2);
-    ctx.fillStyle = BC[i]+'55'; ctx.fill();
-    // Corps du dot
-    ctx.shadowBlur = 10;
-    ctx.beginPath(); ctx.arc(x,y,6,0,Math.PI*2); ctx.fillStyle=BC[i]; ctx.fill();
-    // Reflet interne
-    ctx.shadowBlur = 0;
-    ctx.beginPath(); ctx.arc(x,y,6,0,Math.PI*2);
-    ctx.strokeStyle='rgba(255,255,255,.35)'; ctx.lineWidth=1.5; ctx.stroke();
-    // Point blanc central (brillance)
-    ctx.beginPath(); ctx.arc(x-2,y-2,1.8,0,Math.PI*2);
-    ctx.fillStyle='rgba(255,255,255,.6)'; ctx.fill();
+    ctx.beginPath(); ctx.arc(x,y,7,0,Math.PI*2); ctx.fillStyle=BC[i]; ctx.fill();
+    ctx.beginPath(); ctx.arc(x,y,7,0,Math.PI*2);
+    ctx.strokeStyle='rgba(255,255,255,.22)'; ctx.lineWidth=1.5; ctx.stroke();
   });
-  ctx.shadowBlur = 0;
   // Interaction
   cv.style.cursor = 'default';
   cv.onmousedown = e => {
@@ -1781,7 +1800,7 @@ function drawCC(ctx,W,H,m){
 }
 
 // ── Gate ───────────────────────────────────────────────────────────────────
-let gThr=-40, gRng=40, gM='gate', gView='tr', gActIn=[], gActOut=[], gActGR=[];
+let gThr=-40, gRng=40, gView='tr', gActIn=[], gActOut=[], gActGR=[];
 let gSmIn=-80, gSmOut=-80, gSmGR=0;
 function setG(p,v){
   const el=document.getElementById('g-'+p);
@@ -1890,7 +1909,7 @@ function drawGT(ctx,W,H,m){
   ctx.beginPath();
   for(let xi=0;xi<=cW;xi++){
     const di=-80+xi/cW*80;
-    const dbOut=gM==='expander'?(di<gThr?di-gRng*.5:di):(di<gThr?Math.max(-80,di-gRng):di);
+    const dbOut=di<gThr?Math.max(-80,di-gRng):di;
     const x=cX+xi, y=cY+cH-(Math.max(-80,dbOut)+80)/80*cH;
     xi===0?ctx.moveTo(x,Math.max(cY,y)):ctx.lineTo(x,Math.max(cY,y));
   }
@@ -2090,23 +2109,135 @@ function drawLFO(){
 }
 let tapeIPS=15;function setIPS(btn,v){tapeIPS=v;setBG(btn);rebuildIfPlay('tape');}
 function setTape(p,v){document.getElementById('t-'+p).textContent=p==='bi'?(v>=0?'+':'')+parseFloat(v).toFixed(1)+' dB':v+'%';rebuildIfPlay('tape');}
-let reelA=0;
-function animReels(){
-  // Vitesse proportionnelle au IPS, ralenti quand pas de lecture
-  const speed = PLR.tape?.playing ? Math.max(0.8, tapeIPS/10) : 0.15;
-  reelA += speed;
-  document.getElementById('rli-l').style.transform=`rotate(${-reelA}deg)`;
-  document.getElementById('rli-r').style.transform=`rotate(${reelA}deg)`;
-  requestAnimationFrame(animReels);
+
+let _tapeAngle=0, _tapePos=0.5, _tapeSig=[];
+function _drawReel(ctx,cx,cy,outerR,innerR,angle,playing){
+  // Corps de la bobine (disque brun = bande magnétique enroulée)
+  ctx.beginPath();ctx.arc(cx,cy,outerR,0,Math.PI*2);
+  ctx.fillStyle='#2a1a08';ctx.fill();
+  ctx.strokeStyle='#4a3020';ctx.lineWidth=1.5;ctx.stroke();
+  // Rainures concentriques (rendu bande)
+  for(let r=innerR+4;r<outerR-2;r+=4){
+    ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);
+    ctx.strokeStyle=`rgba(50,28,10,${0.6+Math.random()*.1})`;ctx.lineWidth=1;ctx.stroke();
+  }
+  // Plateau central (métal)
+  ctx.beginPath();ctx.arc(cx,cy,innerR,0,Math.PI*2);
+  ctx.fillStyle='#1e2d40';ctx.fill();
+  ctx.strokeStyle='#3a5070';ctx.lineWidth=1.5;ctx.stroke();
+  // 3 bras/rayons
+  const nSpokes=3;
+  for(let s=0;s<nSpokes;s++){
+    const a=angle+s*Math.PI*2/nSpokes;
+    const x0=cx+Math.cos(a)*innerR,y0=cy+Math.sin(a)*innerR;
+    const x1=cx+Math.cos(a)*(outerR-3),y1=cy+Math.sin(a)*(outerR-3);
+    ctx.strokeStyle='#3a5070';ctx.lineWidth=3;ctx.lineCap='round';
+    ctx.beginPath();ctx.moveTo(x0,y0);ctx.lineTo(x1,y1);ctx.stroke();
+  }
+  ctx.lineCap='butt';
+  // Axe central
+  ctx.beginPath();ctx.arc(cx,cy,5,0,Math.PI*2);
+  ctx.fillStyle='#6a9ab0';ctx.fill();
+  ctx.beginPath();ctx.arc(cx,cy,2,0,Math.PI*2);
+  ctx.fillStyle='#111';ctx.fill();
+  // Bord extérieur brillant
+  ctx.beginPath();ctx.arc(cx,cy,outerR,0,Math.PI*2);
+  ctx.strokeStyle='rgba(255,255,255,.08)';ctx.lineWidth=1;ctx.stroke();
 }
+
 function animTape(){
   const cv=document.getElementById('tape-cv');if(!cv){requestAnimationFrame(animTape);return;}
-  const W=cv.width=cv.offsetWidth||180,H=90;const ctx=cv.getContext('2d');
-  ctx.fillStyle='rgba(6,12,22,.75)';ctx.fillRect(0,0,W,H);
-  if(PLR.tape?.playing)drawSpectrum(ctx,W,H,'tape');
-  const sat=parseInt(document.getElementById('t-sa')?.textContent)||30,wow=parseInt(document.getElementById('t-wo')?.textContent)||15,t=Date.now()/(1000/(tapeIPS/15));
-  ctx.shadowColor='#c49060';ctx.shadowBlur=2;ctx.strokeStyle='#c49060';ctx.lineWidth=1.8;ctx.beginPath();
-  for(let x=0;x<W;x++){const ph=x/W*4*Math.PI+t;const wb=1+(wow/200)*Math.sin(ph*.3);let y=Math.sin(ph*wb)*(1+sat/200);y=Math.tanh(y*sat/80)*H*.38;y+=H/2+(Math.random()-.5)*1.5;x===0?ctx.moveTo(x,y):ctx.lineTo(x,y);}ctx.stroke();ctx.shadowBlur=0;
+  const W=cv.width=cv.offsetWidth||280;
+  const H=220; cv.height=H;
+  const ctx=cv.getContext('2d');
+  ctx.fillStyle='#060c18';ctx.fillRect(0,0,W,H);
+  const playing=PLR.tape?.playing;
+
+  // ── Vitesse rotation ──
+  // 3.75ips≈0.007°/ms, 30ips≈0.056°/ms → en rad/frame(~16ms)
+  const ipsSpeed=playing?(tapeIPS/15)*0.012:0;
+  _tapeAngle+=ipsSpeed;
+  if(playing)_tapePos=Math.min(0.85,_tapePos+0.00005*tapeIPS);
+
+  // ── Zone magnétophone (top 140px) ──
+  const rY=72; // centre des bobines
+  const margin=W*0.18;
+  const lX=margin, rX=W-margin;
+  // Bobine gauche (défile = rétrécit)
+  const lR=Math.max(18,36-_tapePos*20);
+  // Bobine droite (s'enroule = grandit)
+  const rR=Math.min(38,18+_tapePos*20);
+  const hubR=Math.min(lR,rR)*0.38;
+
+  // Fond de plateau (machine)
+  ctx.fillStyle='#0a1520';
+  ctx.beginPath();ctx.roundRect(margin-lR-10,rY-lR-15,W-2*(margin-lR-10),lR+50,4);ctx.fill();
+  ctx.strokeStyle='#1a2d40';ctx.lineWidth=1;ctx.stroke();
+
+  // Chemin de bande (du bord de la bobine gauche au bord de la bobine droite)
+  const tapeW=4, tapeY=rY+Math.max(lR,rR)*0.6;
+  // Angles de tangence approximatifs
+  const leftTanX=lX+lR*0.65, rightTanX=rX-rR*0.65;
+  const capstanX=W/2, capstanY=rY+Math.max(lR,rR)*0.55;
+  const pressY=capstanY+6;
+  // Bande magnétique (trait brun)
+  ctx.strokeStyle='#6a4020';ctx.lineWidth=tapeW;ctx.lineCap='round';
+  ctx.beginPath();
+  ctx.moveTo(lX,rY+lR*0.7);
+  ctx.bezierCurveTo(lX+lR,rY+lR*0.8,capstanX-30,pressY,capstanX,pressY);
+  ctx.bezierCurveTo(capstanX+30,pressY,rX-rR,rY+rR*0.8,rX,rY+rR*0.7);
+  ctx.stroke();ctx.lineCap='butt';
+  // Reflet magnétique sur la bande
+  ctx.strokeStyle='rgba(200,140,60,.25)';ctx.lineWidth=1;
+  ctx.beginPath();
+  ctx.moveTo(lX,rY+lR*0.7-1);
+  ctx.bezierCurveTo(lX+lR,rY+lR*0.8-1,capstanX-30,pressY-1,capstanX,pressY-1);
+  ctx.bezierCurveTo(capstanX+30,pressY-1,rX-rR,rY+rR*0.8-1,rX,rY+rR*0.7-1);
+  ctx.stroke();
+
+  // Galets / capstan (petits cylindres métalliques)
+  [capstanX-40,capstanX+40].forEach(gx=>{
+    ctx.beginPath();ctx.arc(gx,pressY-8,5,0,Math.PI*2);ctx.fillStyle='#2a3d50';ctx.fill();
+    ctx.strokeStyle='#4a6070';ctx.lineWidth=1;ctx.stroke();
+  });
+  ctx.beginPath();ctx.arc(capstanX,pressY-4,4,0,Math.PI*2);ctx.fillStyle='#3a5060';ctx.fill();
+
+  // Bobines
+  _drawReel(ctx,lX,rY,lR,Math.max(8,hubR),_tapeAngle,playing);
+  _drawReel(ctx,rX,rY,rR,Math.max(8,hubR*rR/lR),_tapeAngle*(lR/rR),playing);
+
+  // Label IPS
+  ctx.fillStyle='#3a5878';ctx.font='9px Space Mono';ctx.textAlign='center';
+  ctx.fillText(tapeIPS+' IPS',W/2,rY-Math.max(lR,rR)-4);
+
+  // ── Graphe saturation/modulation (bas 68px) ──
+  const gY=148,gH=H-gY-6;
+  ctx.fillStyle='#040a14';ctx.fillRect(0,gY,W,gH);
+  ctx.strokeStyle='#0d1c2e';ctx.lineWidth=0.5;
+  ctx.beginPath();ctx.moveTo(0,gY+gH/2);ctx.lineTo(W,gY+gH/2);ctx.stroke();
+
+  // Signal lent — une période toutes les ~3 secondes (indépendant de IPS)
+  const sat=(parseInt(document.getElementById('t-sa')?.textContent)||30)/100;
+  const wow=(parseInt(document.getElementById('t-wo')?.textContent)||15)/100;
+  const flutter=(parseInt(document.getElementById('t-fl')?.textContent)||10)/100;
+  const t=Date.now()*0.0006; // très lent
+
+  // Accumulation de points
+  if(!_tapeSig||_tapeSig.length>W)_tapeSig=[];
+  const nowY=gY+gH/2+Math.tanh(Math.sin(t*(1+wow*0.3*Math.sin(t*0.7)))*(1+sat*1.5))*(gH*0.42)+(Math.random()-.5)*flutter*gH*0.15;
+  _tapeSig.push(nowY);
+  if(_tapeSig.length>W)_tapeSig.shift();
+
+  if(_tapeSig.length>2){
+    ctx.strokeStyle='#c49060';ctx.lineWidth=1.8;
+    ctx.beginPath();
+    _tapeSig.forEach((y,i)=>i===0?ctx.moveTo(0,y):ctx.lineTo(i,y));
+    ctx.stroke();
+  }
+  // Label
+  ctx.fillStyle='#3a5878';ctx.font='8px Space Grotesk';ctx.textAlign='left';
+  ctx.fillText('Sat '+(sat*100).toFixed(0)+'%  Wow '+(wow*100).toFixed(0)+'%',4,gY+gH-3);
+
   requestAnimationFrame(animTape);
 }
 
@@ -2133,23 +2264,160 @@ function analyseLoudness(buf){
 function drawLoudCV(){const cv=document.getElementById('loud-cv');if(!cv)return;const W=cv.width=cv.offsetWidth||500,H=65;const ctx=cv.getContext('2d');ctx.fillStyle='#060c16';ctx.fillRect(0,0,W,H);if(PLR.loudness?.playing)drawSpectrum(ctx,W,H,'loudness');if(loudHist.length<2)return;ctx.beginPath();loudHist.forEach((v,i)=>{const x=i/loudHist.length*W,y=H/2-(v+23)/14*H*.44;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});ctx.shadowColor='#C4893A';ctx.shadowBlur=2;ctx.strokeStyle='#C4893A';ctx.lineWidth=1.8;ctx.stroke();ctx.shadowBlur=0;ctx.strokeStyle='#1e3048';ctx.lineWidth=.5;ctx.setLineDash([3,3]);ctx.beginPath();ctx.moveTo(0,H/2);ctx.lineTo(W,H/2);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='#3a5878';ctx.font='8px Space Mono';ctx.textAlign='left';ctx.fillText('-23 LUFS',2,H/2-2);}
 setInterval(()=>{if(document.getElementById('t-loudness')?.classList.contains('on')&&PLR.loudness?.playing)drawLoudCV();},100);
 
-// ── Calibration ─────────────────────────────────────────────────────────────
-const CALIB=[
-  {fmt:'Broadcast (EBU R128)',ref:-23,spl:78,room:21,usage:'Diffusion broadcast EU',ok:true},
-  {fmt:'ATSC A/85 (USA)',ref:-24,spl:78,room:20,usage:'Broadcast USA',ok:true},
-  {fmt:'Film/Post (SMPTE)',ref:-20,spl:83,room:13,usage:'Post-production cinéma',ok:true},
-  {fmt:'Music Master CD',ref:-18,spl:83,room:14,usage:'Mastering album',ok:true},
-  {fmt:'Studio Mix (-18)',ref:-18,spl:85,room:12,usage:'Mixage studio pro',ok:true},
-  {fmt:'Studio Mix (-20)',ref:-20,spl:83,room:14,usage:'Mixage studio conservateur',ok:true},
-  {fmt:'Dialog/ADR',ref:-24,spl:79,room:21,usage:'Post-prod dialogue',ok:true},
-  {fmt:'Near-field NS-10',ref:-18,spl:79,room:20,usage:'Monitoring Yamaha NS-10',ok:false},
-  {fmt:'Pro (+4 dBu / 0VU)',ref:-18,spl:94,room:6,usage:'Sessions tracking pro',ok:false},
-  {fmt:'Semi-pro (-10 dBV)',ref:-10,spl:88,room:12,usage:'Équipement semi-pro',ok:false},
-  {fmt:'Cinéma grande salle',ref:-20,spl:90,room:10,usage:'Étalonnage grande salle',ok:false},
-];
-function buildCalibTable(){
-  const tbody=document.getElementById('calib-tbody');if(!tbody)return;
-  CALIB.forEach(r=>{const tr=document.createElement('tr');tr.innerHTML=`<td class="hl">${r.fmt}</td><td class="hl">${r.ref} dBFS</td><td>${r.spl} dB SPL</td><td class="${r.room>=20?'g':r.room>=12?'w':'r'}">${r.room} dB</td><td style="text-align:left;font-size:10px;color:var(--dim)">${r.usage}</td><td class="${r.ok?'g':'w'}">${r.ok?'✓':'~'}</td>`;tbody.appendChild(tr);});
+// ── Calibration — Triangle Mac Door ─────────────────────────────────────────
+function buildCalibTable(){ calcTMD(); } // alias pour compatibilité DOMContentLoaded
+
+function calcTMD(){
+  const AB=parseFloat(document.getElementById('tmd-ab')?.value)||150;
+  const CA=parseFloat(document.getElementById('tmd-ca')?.value)||150;
+  const CG=parseFloat(document.getElementById('tmd-cg')?.value)||192;
+  const AG=parseFloat(document.getElementById('tmd-ag')?.value)||101;
+  const AD=AB/2;
+  // Affiche AD
+  const setV=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
+  setV('tmd-ad',AD.toFixed(1)+' cm');
+  // Vérifie CA > AD
+  if(CA<=AD){
+    setV('tmd-cd','—'); setV('tmd-acb','—'); setV('tmd-cad','—');
+    setV('tmd-gac','—'); setV('tmd-cae','—'); setV('tmd-ae','—'); setV('tmd-ce','—');
+    _tmdMsg('tmd-msg1','⚠ CA doit être supérieur à AB/2.',false);
+    document.getElementById('tmd-msg2').textContent='';
+    document.getElementById('tmd-congrats').style.display='none';
+    return;
+  }
+  const CD=Math.sqrt(CA*CA-AD*AD);
+  const angACB_rad=2*Math.asin(AD/CA);
+  const angACB=angACB_rad*180/Math.PI;
+  const angCAD_rad=Math.acos(AD/CA);
+  const angCAD=angCAD_rad*180/Math.PI;
+  // Angle GAC via loi des cosinus dans triangle GAC
+  const cosGAC=(CA*CA+AG*AG-CG*CG)/(2*CA*AG);
+  const angGAC_rad=Math.acos(Math.max(-1,Math.min(1,cosGAC)));
+  const angGAC=angGAC_rad*180/Math.PI;
+  // Toe-in : CAE = GAC - 90°
+  const angCAE=angGAC-90;
+  const angDAE=angCAD+angCAE;
+  const AE=AD/Math.cos(angDAE*Math.PI/180);
+  const DE=AE*Math.sin(angDAE*Math.PI/180);
+  const CE=Math.abs(DE-CD);
+
+  setV('tmd-cd',CD.toFixed(1)+' cm');
+  setV('tmd-acb',angACB.toFixed(1)+'°');
+  setV('tmd-cad',angCAD.toFixed(1)+'°');
+  setV('tmd-gac',angGAC.toFixed(1)+'°');
+  setV('tmd-cae',angCAE.toFixed(1)+'°');
+  setV('tmd-ae',AE.toFixed(1)+' cm');
+  setV('tmd-ce',CE.toFixed(1)+' cm');
+
+  // Validation 1 : angle ACB entre 60° et 76°
+  const ok1=angACB>=60&&angACB<=76;
+  if(ok1) _tmdMsg('tmd-msg1','2) L\'angle ACB est de '+angACB.toFixed(1)+'°. ✓ Triangle BON (60°–76°).',true);
+  else if(angACB<60) _tmdMsg('tmd-msg1','2) Angle ACB = '+angACB.toFixed(1)+'°. ✗ Trop fermé (< 60°). Rapprochez les enceintes ou éloignez-vous.',false);
+  else _tmdMsg('tmd-msg1','2) Angle ACB = '+angACB.toFixed(1)+'°. ✗ Trop ouvert (> 76°). Écartez les enceintes ou rapprochez-vous.',false);
+
+  // Validation 2 : angle CAE entre 5° et 8°
+  const ok2=angCAE>=5&&angCAE<=8;
+  if(ok2) _tmdMsg('tmd-msg2','3) Angle CAE (toe-in) = '+angCAE.toFixed(1)+'°. ✓ Orientation BONNE (5°–8°).',true);
+  else if(angCAE<5) _tmdMsg('tmd-msg2','3) Angle CAE = '+angCAE.toFixed(1)+'°. ✗ Toe-in insuffisant (< 5°). Pivotez davantage les enceintes vers l\'intérieur.',false);
+  else _tmdMsg('tmd-msg2','3) Angle CAE = '+angCAE.toFixed(1)+'°. ✗ Toe-in excessif (> 8°). Réduisez l\'orientation des enceintes.',false);
+
+  // Félicitations
+  const cg=document.getElementById('tmd-congrats');
+  if(cg){cg.style.display=ok1&&ok2?'block':'none';cg.style.cssText+='background:#0d2a1a;border:1px solid #3fc87a;color:#3fc87a;margin-top:6px;font-size:10px;font-weight:600;padding:8px;border-radius:4px;';cg.textContent='🎯 FÉLICITATIONS ! Votre configuration est homologuée Triangle Mac Door.';}
+
+  drawTMD(AB,CA,CG,AG,AD,CD,angACB,angCAE,AE,DE,CE,ok1,ok2);
+}
+
+function _tmdMsg(id,txt,ok){
+  const el=document.getElementById(id);if(!el)return;
+  el.textContent=txt;
+  el.style.cssText=`margin-top:6px;font-size:10px;line-height:1.5;padding:7px;border-radius:4px;border:1px solid ${ok?'#3fc87a':'#c45050'};background:${ok?'#0a2018':'#2a0e0e'};color:${ok?'#3fc87a':'#e08080'};`;
+}
+
+function drawTMD(AB,CA,CG,AG,AD,CD,angACB,angCAE,AE,DE,CE,ok1,ok2){
+  const cv=document.getElementById('tmd-cv');if(!cv)return;
+  const W=cv.width=cv.offsetWidth||300,H=260;cv.height=H;
+  const ctx=cv.getContext('2d');
+  ctx.fillStyle='#040c18';ctx.fillRect(0,0,W,H);
+
+  // Coordonnées réelles (cm)
+  // D=origine (0,0), A=(-AD,0), B=(+AD,0), C=(0,+CD), E=(0,-(DE-CD))
+  const pts={
+    D:{x:0,y:0}, A:{x:-AD,y:0}, B:{x:AD,y:0},
+    C:{x:0,y:CD}, E:{x:0,y:-(DE-CD)}
+  };
+  // Calcul G pour affichage (point sur la face de l'enceinte A)
+  const angCAE_r=angCAE*Math.PI/180;
+  const angCAD_r=Math.acos(AD/CA);
+  const angDAE_r=angCAD_r+angCAE_r;
+  // Normalisation : bounding box
+  const allX=[pts.A.x,pts.B.x,pts.C.x,pts.E.x];
+  const allY=[pts.A.y,pts.B.y,pts.C.y,pts.E.y];
+  const minX=Math.min(...allX),maxX=Math.max(...allX);
+  const minY=Math.min(...allY),maxY=Math.max(...allY);
+  const rangeX=maxX-minX,rangeY=maxY-minY;
+  const scale=Math.min((W-40)/rangeX,(H-50)/rangeY)*0.82;
+  const offX=W/2-(minX+maxX)/2*scale;
+  const offY=H-25-maxY*scale; // bas = enceintes, haut = écoute non, on inverse Y
+
+  const P=p=>({x:offX+p.x*scale, y:offY-p.y*scale});
+
+  const pA=P(pts.A),pB=P(pts.B),pC=P(pts.C),pD=P(pts.D),pE=P(pts.E);
+
+  // Quadrillage léger
+  ctx.strokeStyle='#0a1c30';ctx.lineWidth=0.5;
+  for(let gx=0;gx<=W;gx+=40){ctx.beginPath();ctx.moveTo(gx,0);ctx.lineTo(gx,H);ctx.stroke();}
+  for(let gy=0;gy<=H;gy+=40){ctx.beginPath();ctx.moveTo(0,gy);ctx.lineTo(W,gy);ctx.stroke();}
+
+  // Triangle principal ABC (rouge si invalide, vert si ok)
+  const triColor=ok1?'#3fc87a':'#d04040';
+  ctx.strokeStyle=triColor;ctx.lineWidth=2;ctx.setLineDash([]);
+  ctx.beginPath();ctx.moveTo(pA.x,pA.y);ctx.lineTo(pC.x,pC.y);ctx.lineTo(pB.x,pB.y);ctx.closePath();ctx.stroke();
+
+  // Fill triangle léger
+  ctx.fillStyle=ok1?'rgba(63,200,122,.05)':'rgba(208,64,64,.05)';ctx.fill();
+
+  // Ligne axe D (milieu AB) → C
+  ctx.strokeStyle='#1e3248';ctx.lineWidth=1;ctx.setLineDash([4,4]);
+  ctx.beginPath();ctx.moveTo(pD.x,pD.y);ctx.lineTo(pC.x,pC.y);ctx.stroke();ctx.setLineDash([]);
+
+  // Axes acoustiques A→E et B→E (toe-in)
+  const axColor=ok2?'rgba(63,200,122,.6)':'rgba(208,64,64,.5)';
+  ctx.strokeStyle=axColor;ctx.lineWidth=1.2;ctx.setLineDash([5,4]);
+  ctx.beginPath();ctx.moveTo(pA.x,pA.y);ctx.lineTo(pE.x,pE.y);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(pB.x,pB.y);ctx.lineTo(pE.x,pE.y);ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Points
+  function dot(p,label,color,r=5){
+    ctx.beginPath();ctx.arc(p.x,p.y,r,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();
+    ctx.fillStyle='#c8d8e8';ctx.font='bold 10px Space Grotesk';ctx.textAlign='center';
+    ctx.fillText(label,p.x,p.y-r-3);
+  }
+  dot(pA,'A','#5a8fd0');
+  dot(pB,'B','#5a8fd0');
+  dot(pC,'C','#E5A84E',6);
+  dot(pD,'D','#3a5878',3);
+  dot(pE,'E',ok2?'#3fc87a':'#d04040',4);
+
+  // Labels distances
+  function midLabel(p1,p2,txt,dy=0){
+    const mx=(p1.x+p2.x)/2,my=(p1.y+p2.y)/2;
+    ctx.fillStyle='#4a7090';ctx.font='8px Space Mono';ctx.textAlign='center';
+    ctx.fillText(txt,mx,my+dy);
+  }
+  midLabel(pA,pB,'AB='+AB+'cm',12);
+  midLabel(pA,pC,'CA='+CA+'cm',-5);
+  midLabel(pC,pD,'CD='+CD.toFixed(0)+'cm',0);
+
+  // Arc angle ACB à C
+  const r=22;
+  const aCA=Math.atan2(pA.y-pC.y,pA.x-pC.x);
+  const aCB=Math.atan2(pB.y-pC.y,pB.x-pC.x);
+  ctx.strokeStyle=ok1?'rgba(63,200,122,.7)':'rgba(208,64,64,.6)';ctx.lineWidth=1.2;
+  ctx.beginPath();ctx.arc(pC.x,pC.y,r,aCA,aCB);ctx.stroke();
+  ctx.fillStyle=ok1?'#3fc87a':'#d04040';ctx.font='9px Space Mono';ctx.textAlign='center';
+  ctx.fillText(angACB.toFixed(1)+'°',pC.x,pC.y+r+12);
 }
 let calibOsc=null,calibGn=null,calibPlaying=false;
 function toggleCalib(){
@@ -2569,7 +2837,6 @@ window.addEventListener('DOMContentLoaded', () => {
   loadScores();
   loadProfile();
   drawSigStatic();
-  animReels();
   animTape();
   setTimeout(() => {
     drawEQ();
