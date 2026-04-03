@@ -16,7 +16,7 @@
 *{box-sizing:border-box;margin:0;padding:0;}
 body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13px;min-height:100vh;}
 /* NAV */
-#topbar{background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 18px;height:50px;position:sticky;top:0;z-index:100;gap:4px;}
+#topbar{background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:center;padding:0 18px;height:50px;position:sticky;top:0;z-index:100;gap:4px;}
 .logo{font-size:16px;font-weight:700;color:var(--clight);letter-spacing:3px;margin-right:20px;white-space:nowrap;}
 .logo span{color:var(--dim);font-weight:300;}
 .ntab{padding:0 16px;height:50px;display:flex;align-items:center;cursor:pointer;color:var(--muted);font-size:11px;font-weight:500;letter-spacing:1px;text-transform:uppercase;border-bottom:2px solid transparent;white-space:nowrap;transition:color .15s;}
@@ -191,12 +191,11 @@ select{background:var(--bg3);border:1px solid var(--border);color:var(--text);pa
 <body>
 
 <div id="topbar">
-  <div class="logo">Audio<span>Lab</span></div>
-  <div class="ntab on" onclick="showPage('tools')">⬡ Audio Tools</div>
-  <div class="ntab" onclick="showPage('music')">♩ Music Tools</div>
+  <div class="logo" style="position:absolute;left:18px">Audio<span>Lab</span></div>
+  <div class="ntab on" onclick="showPage('tools')">⬡ Audio</div>
+  <div class="ntab" onclick="showPage('music')">♩ Music</div>
   <div class="ntab" onclick="showPage('learn')">◈ Learn</div>
-  <div class="flex1"></div>
-  <div class="avatar" id="avatar-btn" onclick="showPage('account')" title="Mon compte">
+  <div class="avatar" id="avatar-btn" onclick="showPage('account')" title="Mon compte" style="position:absolute;right:18px">
     <span id="avatar-txt">G</span>
   </div>
 </div>
@@ -2272,36 +2271,28 @@ function animTape(){
   ctx.fillStyle='#060c18';ctx.fillRect(0,0,W,H);
   const playing=PLR.tape?.playing;
 
-  // IPS → taille max bobine (plus vite = plus grandes bobines pro)
-  const maxReelR={3.75:22,7.5:28,15:36,30:44}[tapeIPS]||36;
-  const minReelR=Math.max(9,Math.round(maxReelR*0.30));
+  // Taille des bobines FIXE (ne change pas avec l'IPS)
+  const lR=34, rR=34, hubR=11;
 
-  // Vitesse rotation proportionnelle à l'IPS
+  // Vitesse de rotation proportionnelle à l'IPS (seul paramètre qui change)
   const ipsSpeed=playing?(tapeIPS/15)*0.013:0;
   _tapeAngle+=ipsSpeed;
-  if(playing)_tapePos=Math.min(0.9,_tapePos+0.000035*tapeIPS);
 
   const rY=Math.round(H*0.52);
   const margin=W*0.20;
   const lX=Math.round(margin), rX=Math.round(W-margin);
 
-  // Bobine gauche (rétrécit)
-  const lR=Math.max(minReelR,maxReelR-_tapePos*(maxReelR-minReelR));
-  // Bobine droite (grossit)
-  const rR=Math.min(maxReelR,minReelR+_tapePos*(maxReelR-minReelR));
-  const hubR=Math.min(lR,rR)*0.32;
-
-  // Plateau machine
-  const platX=lX-lR-12, platW=W-2*(margin-maxReelR-14);
+  // Plateau machine (taille fixe basée sur lR=34)
+  const platX=lX-lR-12;
   ctx.fillStyle='#0a1520';
   ctx.beginPath();
-  if(ctx.roundRect)ctx.roundRect(platX,rY-maxReelR-16,W-2*platX,maxReelR*2+38,5);
-  else ctx.rect(platX,rY-maxReelR-16,W-2*platX,maxReelR*2+38);
+  if(ctx.roundRect)ctx.roundRect(platX,rY-lR-16,W-2*platX,lR*2+38,5);
+  else ctx.rect(platX,rY-lR-16,W-2*platX,lR*2+38);
   ctx.fill();
   ctx.strokeStyle='#1a2d40';ctx.lineWidth=1;ctx.stroke();
 
   // Capstan & galets
-  const capstanX=W/2, pressY=rY+Math.max(lR,rR)*0.52+5;
+  const capstanX=W/2, pressY=rY+lR*0.52+5;
   [capstanX-36,capstanX+36].forEach(gx=>{
     ctx.beginPath();ctx.arc(gx,pressY-6,4,0,Math.PI*2);
     ctx.fillStyle='#2a3d50';ctx.fill();ctx.strokeStyle='#4a6070';ctx.lineWidth=1;ctx.stroke();
@@ -2323,15 +2314,15 @@ function animTape(){
   ctx.bezierCurveTo(capstanX+26,pressY-1.5,rX-rR*0.85,rY+rR*0.76-1.5,rX,rY+rR*0.65-1.5);
   ctx.stroke();
 
-  // Bobines
-  _drawReel(ctx,lX,rY,lR,Math.max(7,hubR),_tapeAngle,playing);
-  _drawReel(ctx,rX,rY,rR,Math.max(7,hubR*(rR/Math.max(lR,1))),_tapeAngle*(lR/Math.max(rR,1)),playing);
+  // Bobines (taille fixe, même angle de rotation)
+  _drawReel(ctx,lX,rY,lR,hubR,_tapeAngle,playing);
+  _drawReel(ctx,rX,rY,rR,hubR,_tapeAngle,playing);
 
   // Label IPS + LED lecture
   ctx.fillStyle='#3a5878';ctx.font='10px Space Mono';ctx.textAlign='center';
-  ctx.fillText(tapeIPS+' IPS',W/2,rY-maxReelR-5);
+  ctx.fillText(tapeIPS+' IPS',W/2,rY-lR-5);
   if(playing){
-    ctx.beginPath();ctx.arc(W/2+42,rY-maxReelR-9,3,0,Math.PI*2);
+    ctx.beginPath();ctx.arc(W/2+42,rY-lR-9,3,0,Math.PI*2);
     ctx.fillStyle='#d04040';ctx.shadowColor='#d04040';ctx.shadowBlur=6;ctx.fill();ctx.shadowBlur=0;
   }
 
