@@ -2650,6 +2650,7 @@ const CHORD_DB={};
   const QUAL_LIST=['maj','min','7','maj7','min7','sus2','sus4','aug','dim'];
   const INT={maj:[0,4,7],min:[0,3,7],'7':[0,4,7,10],maj7:[0,4,7,11],min7:[0,3,7,10],sus2:[0,2,7],sus4:[0,5,7],aug:[0,4,8],dim:[0,3,6]};
   const INFO={maj:'Accord majeur',min:'Accord mineur','7':'Dominante 7',maj7:'Majeur 7',min7:'Mineur 7',sus2:'Suspension 2',sus4:'Suspension 4',aug:'Augmenté',dim:'Diminué'};
+  const QLB={maj:'Major',min:'Minor','7':'Dom7',maj7:'Maj7',min7:'Min7',sus2:'Sus2',sus4:'Sus4',aug:'Aug',dim:'Dim'};
   const N=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
   // E-form barre shapes (root on low-E string at fret 0)
   const EF={maj:[0,2,2,1,0,0],min:[0,2,2,0,0,0],'7':[0,2,0,1,0,0],maj7:[0,2,1,1,0,0],min7:[0,2,0,0,0,0],sus2:[0,2,2,4,0,0],sus4:[0,2,2,2,0,0],aug:[0,3,2,1,1,0],dim:[0,1,2,0,2,-1]};
@@ -2667,7 +2668,7 @@ const CHORD_DB={};
     QUAL_LIST.forEach(q=>{
       const key=root+'_'+q;
       const notes=(INT[q]||[0,4,7]).map(i=>N[(ri+i)%12]).join(' \u2013 ');
-      const name=root+' '+(QN[q]||q);
+      const name=root+' '+(QLB[q]||q);
       const info=INFO[q]||'';
       let frets;
       if(OPEN[key]){
