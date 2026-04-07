@@ -26,14 +26,23 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13
 .avatar{width:30px;height:30px;border-radius:50%;background:var(--bg3);border:1.5px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--clight);overflow:hidden;position:relative;flex-shrink:0;}
 .avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
 /* SUB */
-.smenu{background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 12px;gap:2px;overflow-x:auto;scrollbar-width:none;height:38px;position:sticky;top:50px;z-index:99;}
-.smenu::-webkit-scrollbar{display:none;}
+.smenu{background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 12px;gap:2px;overflow:visible;height:38px;position:sticky;top:50px;z-index:99;}
 .stab{padding:0 12px;height:38px;display:flex;align-items:center;cursor:pointer;color:var(--muted);font-size:10px;font-weight:500;letter-spacing:.8px;text-transform:uppercase;border-bottom:2px solid transparent;white-space:nowrap;transition:color .12s;flex-shrink:0;}
 .stab:hover{color:var(--dim);}
 .stab.on{color:var(--clight);border-bottom:2px solid var(--copper);}
 .ssep{width:1px;height:16px;background:var(--border);margin:0 2px;flex-shrink:0;}
-.scat{font-size:7px;color:var(--muted);text-transform:uppercase;letter-spacing:1.2px;padding:0 6px 0 10px;white-space:nowrap;opacity:.55;flex-shrink:0;}
 #page-music .smenu,#page-learn .smenu{justify-content:center;}
+.sdrop{position:relative;flex-shrink:0;}
+.sdrop-btn{padding:0 16px;height:38px;display:flex;align-items:center;gap:5px;cursor:pointer;color:var(--muted);font-size:10px;font-weight:500;letter-spacing:.8px;text-transform:uppercase;border-bottom:2px solid transparent;white-space:nowrap;transition:color .12s;user-select:none;}
+.sdrop-btn:hover{color:var(--dim);}
+.sdrop-btn.on{color:var(--clight);border-bottom:2px solid var(--copper);}
+.sdrop .arr{font-size:7px;opacity:.4;margin-left:2px;display:inline-block;transition:transform .15s;}
+.sdrop.open>.sdrop-btn .arr{transform:rotate(180deg);}
+.sdrop-menu{position:absolute;top:100%;left:0;background:var(--bg2);border:1px solid var(--border);border-top:none;border-radius:0 0 5px 5px;padding:4px 0;min-width:130px;z-index:300;display:none;box-shadow:0 8px 20px rgba(0,0,0,.5);}
+.sdrop.open>.sdrop-menu{display:block;}
+.sdrop-item{padding:8px 18px;font-size:10px;color:var(--muted);cursor:pointer;text-transform:uppercase;letter-spacing:.7px;white-space:nowrap;transition:color .1s,background .1s;}
+.sdrop-item:hover{color:var(--clight);background:rgba(255,255,255,.03);}
+.sdrop-item.on{color:var(--clight);}
 /* SECTIONS */
 .page{display:none;}.page.on{display:block;}
 .tool{display:none;}.tool.on{display:block;animation:fi .15s ease;}
@@ -205,27 +214,46 @@ select{background:var(--bg3);border:1px solid var(--border);color:var(--text);pa
 <!-- ═══ AUDIO TOOLS ═══ -->
 <div class="page on" id="page-tools">
   <div class="smenu">
-    <span class="scat">Tools</span>
-    <div class="stab on" onclick="showTool('siggen')" data-t="siggen">∿ Signal</div>
-    <div class="stab" onclick="showTool('loudness')" data-t="loudness">▊ Loudness</div>
-    <div class="stab" onclick="showTool('calib')" data-t="calib">⊛ Calib</div>
-    <div class="ssep"></div>
-    <span class="scat">EQ</span>
-    <div class="stab" onclick="showTool('eq')" data-t="eq">≋ EQ</div>
-    <div class="ssep"></div>
-    <span class="scat">Dyn</span>
-    <div class="stab" onclick="showTool('comp')" data-t="comp">↓ Comp</div>
-    <div class="stab" onclick="showTool('gate')" data-t="gate">⌂ Gate</div>
-    <div class="ssep"></div>
-    <span class="scat">Space</span>
-    <div class="stab" onclick="showTool('reverb')" data-t="reverb">◌ Reverb</div>
-    <div class="stab" onclick="showTool('delay')" data-t="delay">⊸ Delay</div>
-    <div class="ssep"></div>
-    <span class="scat">Modulation</span>
-    <div class="stab" onclick="showTool('mod')" data-t="mod">〜 Mod</div>
-    <div class="ssep"></div>
-    <span class="scat">Saturation</span>
-    <div class="stab" onclick="showTool('tape')" data-t="tape">⊙ Tape</div>
+    <div class="sdrop">
+      <div class="sdrop-btn on" id="sdrop-tools" onclick="toggleDrop(this)">Tools <span class="arr">▾</span></div>
+      <div class="sdrop-menu">
+        <div class="sdrop-item on" onclick="showTool('siggen')" data-t="siggen">∿ Signal</div>
+        <div class="sdrop-item" onclick="showTool('loudness')" data-t="loudness">▊ Loudness</div>
+        <div class="sdrop-item" onclick="showTool('calib')" data-t="calib">⊛ Calib</div>
+      </div>
+    </div>
+    <div class="sdrop">
+      <div class="sdrop-btn" onclick="toggleDrop(this)">EQ <span class="arr">▾</span></div>
+      <div class="sdrop-menu">
+        <div class="sdrop-item" onclick="showTool('eq')" data-t="eq">≋ EQ</div>
+      </div>
+    </div>
+    <div class="sdrop">
+      <div class="sdrop-btn" onclick="toggleDrop(this)">Dyn <span class="arr">▾</span></div>
+      <div class="sdrop-menu">
+        <div class="sdrop-item" onclick="showTool('comp')" data-t="comp">↓ Comp</div>
+        <div class="sdrop-item" onclick="showTool('gate')" data-t="gate">⌂ Gate</div>
+      </div>
+    </div>
+    <div class="sdrop">
+      <div class="sdrop-btn" onclick="toggleDrop(this)">Space <span class="arr">▾</span></div>
+      <div class="sdrop-menu">
+        <div class="sdrop-item" onclick="showTool('reverb')" data-t="reverb">◌ Reverb</div>
+        <div class="sdrop-item" onclick="showTool('delay')" data-t="delay">⊸ Delay</div>
+      </div>
+    </div>
+    <div class="sdrop">
+      <div class="sdrop-btn" onclick="toggleDrop(this)">Modulation <span class="arr">▾</span></div>
+      <div class="sdrop-menu">
+        <div class="sdrop-item" onclick="showTool('mod')" data-t="mod">〜 Mod</div>
+      </div>
+    </div>
+    <div class="sdrop">
+      <div class="sdrop-btn" onclick="toggleDrop(this)">Saturation <span class="arr">▾</span></div>
+      <div class="sdrop-menu">
+        <div class="sdrop-item" onclick="showTool('tape')" data-t="tape">⊙ Tape</div>
+      </div>
+    </div>
   </div>
   <div class="panel">
 
@@ -525,11 +553,16 @@ select{background:var(--bg3);border:1px solid var(--border);color:var(--text);pa
 <!-- ═══ MUSIC TOOLS ═══ -->
 <div class="page" id="page-music">
   <div class="smenu">
-    <div class="stab on" onclick="showMtool('tuner')" data-m="tuner">♯ Tuner</div><div class="ssep"></div>
-    <div class="stab" onclick="showMtool('metro')" data-m="metro">♩ Métronome</div><div class="ssep"></div>
-    <div class="stab" onclick="showMtool('chord')" data-m="chord">⊞ Accords</div><div class="ssep"></div>
-    <div class="stab" onclick="showMtool('beat')" data-m="beat">◉ Beat</div><div class="ssep"></div>
-    <div class="stab" onclick="showMtool('transform')" data-m="transform">⊗ Transform</div>
+    <div class="sdrop">
+      <div class="sdrop-btn on" id="music-drop-btn" onclick="toggleDrop(this)">♯ Tuner <span class="arr">▾</span></div>
+      <div class="sdrop-menu" style="left:50%;transform:translateX(-50%)">
+        <div class="sdrop-item on" onclick="showMtool('tuner')" data-m="tuner">♯ Tuner</div>
+        <div class="sdrop-item" onclick="showMtool('metro')" data-m="metro">♩ Métronome</div>
+        <div class="sdrop-item" onclick="showMtool('chord')" data-m="chord">⊞ Accords</div>
+        <div class="sdrop-item" onclick="showMtool('beat')" data-m="beat">◉ Beat</div>
+        <div class="sdrop-item" onclick="showMtool('transform')" data-m="transform">⊗ Transform</div>
+      </div>
+    </div>
   </div>
   <div class="panel">
 
@@ -799,20 +832,36 @@ function showPage(p) {
   if (p === 'account') refreshAccount();
 }
 
+function toggleDrop(btn){
+  const wrap=btn.closest('.sdrop');
+  const isOpen=wrap.classList.contains('open');
+  document.querySelectorAll('.sdrop.open').forEach(d=>d.classList.remove('open'));
+  if(!isOpen)wrap.classList.add('open');
+}
+document.addEventListener('click',function(e){
+  if(!e.target.closest('.sdrop'))document.querySelectorAll('.sdrop.open').forEach(d=>d.classList.remove('open'));
+});
 function showTool(id) {
   document.querySelectorAll('[data-t]').forEach(x => x.classList.remove('on'));
   document.querySelectorAll('.tool').forEach(x => x.classList.remove('on'));
-  document.querySelector('[data-t="' + id + '"]').classList.add('on');
-  document.getElementById('t-' + id).classList.add('on');
+  document.querySelectorAll('.sdrop-btn').forEach(x => x.classList.remove('on'));
+  document.querySelectorAll('.sdrop.open').forEach(d=>d.classList.remove('open'));
+  const item=document.querySelector('[data-t="' + id + '"]');
+  item?.classList.add('on');
+  document.getElementById('t-' + id)?.classList.add('on');
+  item?.closest('.sdrop')?.querySelector('.sdrop-btn')?.classList.add('on');
   const refreshers = { eq: drawEQ, comp: drawComp, gate: drawGate, reverb: drawRevEnv, delay: drawDelViz, mod: drawLFO };
   if (refreshers[id]) setTimeout(refreshers[id], 50);
 }
-
 function showMtool(id) {
   document.querySelectorAll('[data-m]').forEach(x => x.classList.remove('on'));
   document.querySelectorAll('.mtool').forEach(x => x.classList.remove('on'));
-  document.querySelector('[data-m="' + id + '"]').classList.add('on');
-  document.getElementById('m-' + id).classList.add('on');
+  document.querySelectorAll('.sdrop.open').forEach(d=>d.classList.remove('open'));
+  const item=document.querySelector('[data-m="' + id + '"]');
+  item?.classList.add('on');
+  document.getElementById('m-' + id)?.classList.add('on');
+  const btn=document.getElementById('music-drop-btn');
+  if(btn&&item){btn.innerHTML=item.textContent.trim()+' <span class="arr">▾</span>';}
   if (id === 'chord') setTimeout(drawChord, 50);
   if (id === 'beat') setTimeout(buildBeatGrid, 50);
 }
