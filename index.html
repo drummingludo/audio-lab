@@ -31,7 +31,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13
 .stab:hover{color:var(--dim);}
 .stab.on{color:var(--clight);border-bottom:2px solid var(--copper);}
 .ssep{width:1px;height:16px;background:var(--border);margin:0 2px;flex-shrink:0;}
-#page-music .smenu,#page-learn .smenu{justify-content:center;}
+#page-learn .smenu{justify-content:center;}
 .sdrop{position:relative;flex-shrink:0;}
 .sdrop-btn{padding:0 16px;height:38px;display:flex;align-items:center;gap:5px;cursor:pointer;color:var(--muted);font-size:10px;font-weight:500;letter-spacing:.8px;text-transform:uppercase;border-bottom:2px solid transparent;white-space:nowrap;transition:color .12s;user-select:none;}
 .sdrop-btn:hover{color:var(--dim);}
@@ -204,7 +204,16 @@ select{background:var(--bg3);border:1px solid var(--border);color:var(--text);pa
 <div id="topbar">
   <div class="logo" style="position:absolute;left:18px">Audio<span>Lab</span></div>
   <div class="ntab on" onclick="showPage('tools')">⬡ Audio</div>
-  <div class="ntab" onclick="showPage('music')">♩ Music</div>
+  <div class="sdrop" style="height:50px;display:flex;align-items:center">
+    <div class="ntab" id="music-ntab" onclick="toggleDrop(this)">♩ Music <span class="arr">▾</span></div>
+    <div class="sdrop-menu" style="left:50%;transform:translateX(-50%);top:50px;min-width:150px">
+      <div class="sdrop-item" onclick="showPage('music');showMtool('tuner')" data-m="tuner">♯ Tuner</div>
+      <div class="sdrop-item" onclick="showPage('music');showMtool('metro')" data-m="metro">♩ Métronome</div>
+      <div class="sdrop-item" onclick="showPage('music');showMtool('chord')" data-m="chord">⊞ Accords</div>
+      <div class="sdrop-item" onclick="showPage('music');showMtool('beat')" data-m="beat">◉ Beat</div>
+      <div class="sdrop-item" onclick="showPage('music');showMtool('transform')" data-m="transform">⊗ Transform</div>
+    </div>
+  </div>
   <div class="ntab" onclick="showPage('learn')">◈ Learn</div>
   <div class="avatar" id="avatar-btn" onclick="showPage('account')" title="Mon compte" style="position:absolute;right:18px">
     <span id="avatar-txt">G</span>
@@ -552,18 +561,6 @@ select{background:var(--bg3);border:1px solid var(--border);color:var(--text);pa
 
 <!-- ═══ MUSIC TOOLS ═══ -->
 <div class="page" id="page-music">
-  <div class="smenu">
-    <div class="sdrop">
-      <div class="sdrop-btn on" id="music-drop-btn" onclick="toggleDrop(this)">♯ Tuner <span class="arr">▾</span></div>
-      <div class="sdrop-menu" style="left:50%;transform:translateX(-50%)">
-        <div class="sdrop-item on" onclick="showMtool('tuner')" data-m="tuner">♯ Tuner</div>
-        <div class="sdrop-item" onclick="showMtool('metro')" data-m="metro">♩ Métronome</div>
-        <div class="sdrop-item" onclick="showMtool('chord')" data-m="chord">⊞ Accords</div>
-        <div class="sdrop-item" onclick="showMtool('beat')" data-m="beat">◉ Beat</div>
-        <div class="sdrop-item" onclick="showMtool('transform')" data-m="transform">⊗ Transform</div>
-      </div>
-    </div>
-  </div>
   <div class="panel">
 
     <!-- TUNER -->
@@ -857,11 +854,8 @@ function showMtool(id) {
   document.querySelectorAll('[data-m]').forEach(x => x.classList.remove('on'));
   document.querySelectorAll('.mtool').forEach(x => x.classList.remove('on'));
   document.querySelectorAll('.sdrop.open').forEach(d=>d.classList.remove('open'));
-  const item=document.querySelector('[data-m="' + id + '"]');
-  item?.classList.add('on');
+  document.querySelector('[data-m="' + id + '"]')?.classList.add('on');
   document.getElementById('m-' + id)?.classList.add('on');
-  const btn=document.getElementById('music-drop-btn');
-  if(btn&&item){btn.innerHTML=item.textContent.trim()+' <span class="arr">▾</span>';}
   if (id === 'chord') setTimeout(drawChord, 50);
   if (id === 'beat') setTimeout(buildBeatGrid, 50);
 }
