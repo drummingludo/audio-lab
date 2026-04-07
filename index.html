@@ -43,6 +43,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13
 .sdrop-item{padding:8px 18px;font-size:10px;color:var(--muted);cursor:pointer;text-transform:uppercase;letter-spacing:.7px;white-space:nowrap;transition:color .1s,background .1s;}
 .sdrop-item:hover{color:var(--clight);background:rgba(255,255,255,.03);}
 .sdrop-item.on{color:var(--clight);}
+.sdrop-cat{padding:8px 18px 3px;font-size:7px;color:var(--muted);text-transform:uppercase;letter-spacing:1.2px;opacity:.45;pointer-events:none;border-top:1px solid var(--border);margin-top:2px;}
+.sdrop-cat:first-child{border-top:none;margin-top:0;}
 /* SECTIONS */
 .page{display:none;}.page.on{display:block;}
 .tool{display:none;}.tool.on{display:block;animation:fi .15s ease;}
@@ -203,7 +205,27 @@ select{background:var(--bg3);border:1px solid var(--border);color:var(--text);pa
 
 <div id="topbar">
   <div class="logo" style="position:absolute;left:18px">Audio<span>Lab</span></div>
-  <div class="ntab on" onclick="showPage('tools')">⬡ Audio</div>
+  <div class="sdrop" style="height:50px;display:flex;align-items:center">
+    <div class="ntab on" id="audio-ntab" onclick="toggleDrop(this)">⬡ Audio <span class="arr">▾</span></div>
+    <div class="sdrop-menu" style="min-width:160px">
+      <div class="sdrop-cat">Tools</div>
+      <div class="sdrop-item on" onclick="showPage('tools');showTool('siggen')" data-t="siggen">∿ Signal</div>
+      <div class="sdrop-item" onclick="showPage('tools');showTool('loudness')" data-t="loudness">▊ Loudness</div>
+      <div class="sdrop-item" onclick="showPage('tools');showTool('calib')" data-t="calib">⊛ Calib</div>
+      <div class="sdrop-cat">EQ</div>
+      <div class="sdrop-item" onclick="showPage('tools');showTool('eq')" data-t="eq">≋ EQ</div>
+      <div class="sdrop-cat">Dyn</div>
+      <div class="sdrop-item" onclick="showPage('tools');showTool('comp')" data-t="comp">↓ Comp</div>
+      <div class="sdrop-item" onclick="showPage('tools');showTool('gate')" data-t="gate">⌂ Gate</div>
+      <div class="sdrop-cat">Space</div>
+      <div class="sdrop-item" onclick="showPage('tools');showTool('reverb')" data-t="reverb">◌ Reverb</div>
+      <div class="sdrop-item" onclick="showPage('tools');showTool('delay')" data-t="delay">⊸ Delay</div>
+      <div class="sdrop-cat">Modulation</div>
+      <div class="sdrop-item" onclick="showPage('tools');showTool('mod')" data-t="mod">〜 Mod</div>
+      <div class="sdrop-cat">Saturation</div>
+      <div class="sdrop-item" onclick="showPage('tools');showTool('tape')" data-t="tape">⊙ Tape</div>
+    </div>
+  </div>
   <div class="sdrop" style="height:50px;display:flex;align-items:center">
     <div class="ntab" id="music-ntab" onclick="toggleDrop(this)">♩ Music <span class="arr">▾</span></div>
     <div class="sdrop-menu" style="left:50%;transform:translateX(-50%);top:50px;min-width:150px">
@@ -222,48 +244,6 @@ select{background:var(--bg3);border:1px solid var(--border);color:var(--text);pa
 
 <!-- ═══ AUDIO TOOLS ═══ -->
 <div class="page on" id="page-tools">
-  <div class="smenu">
-    <div class="sdrop">
-      <div class="sdrop-btn on" id="sdrop-tools" onclick="toggleDrop(this)">Tools <span class="arr">▾</span></div>
-      <div class="sdrop-menu">
-        <div class="sdrop-item on" onclick="showTool('siggen')" data-t="siggen">∿ Signal</div>
-        <div class="sdrop-item" onclick="showTool('loudness')" data-t="loudness">▊ Loudness</div>
-        <div class="sdrop-item" onclick="showTool('calib')" data-t="calib">⊛ Calib</div>
-      </div>
-    </div>
-    <div class="sdrop">
-      <div class="sdrop-btn" onclick="toggleDrop(this)">EQ <span class="arr">▾</span></div>
-      <div class="sdrop-menu">
-        <div class="sdrop-item" onclick="showTool('eq')" data-t="eq">≋ EQ</div>
-      </div>
-    </div>
-    <div class="sdrop">
-      <div class="sdrop-btn" onclick="toggleDrop(this)">Dyn <span class="arr">▾</span></div>
-      <div class="sdrop-menu">
-        <div class="sdrop-item" onclick="showTool('comp')" data-t="comp">↓ Comp</div>
-        <div class="sdrop-item" onclick="showTool('gate')" data-t="gate">⌂ Gate</div>
-      </div>
-    </div>
-    <div class="sdrop">
-      <div class="sdrop-btn" onclick="toggleDrop(this)">Space <span class="arr">▾</span></div>
-      <div class="sdrop-menu">
-        <div class="sdrop-item" onclick="showTool('reverb')" data-t="reverb">◌ Reverb</div>
-        <div class="sdrop-item" onclick="showTool('delay')" data-t="delay">⊸ Delay</div>
-      </div>
-    </div>
-    <div class="sdrop">
-      <div class="sdrop-btn" onclick="toggleDrop(this)">Modulation <span class="arr">▾</span></div>
-      <div class="sdrop-menu">
-        <div class="sdrop-item" onclick="showTool('mod')" data-t="mod">〜 Mod</div>
-      </div>
-    </div>
-    <div class="sdrop">
-      <div class="sdrop-btn" onclick="toggleDrop(this)">Saturation <span class="arr">▾</span></div>
-      <div class="sdrop-menu">
-        <div class="sdrop-item" onclick="showTool('tape')" data-t="tape">⊙ Tape</div>
-      </div>
-    </div>
-  </div>
   <div class="panel">
 
     <!-- SIGNAL GEN -->
@@ -841,12 +821,9 @@ document.addEventListener('click',function(e){
 function showTool(id) {
   document.querySelectorAll('[data-t]').forEach(x => x.classList.remove('on'));
   document.querySelectorAll('.tool').forEach(x => x.classList.remove('on'));
-  document.querySelectorAll('.sdrop-btn').forEach(x => x.classList.remove('on'));
   document.querySelectorAll('.sdrop.open').forEach(d=>d.classList.remove('open'));
-  const item=document.querySelector('[data-t="' + id + '"]');
-  item?.classList.add('on');
+  document.querySelector('[data-t="' + id + '"]')?.classList.add('on');
   document.getElementById('t-' + id)?.classList.add('on');
-  item?.closest('.sdrop')?.querySelector('.sdrop-btn')?.classList.add('on');
   const refreshers = { eq: drawEQ, comp: drawComp, gate: drawGate, reverb: drawRevEnv, delay: drawDelViz, mod: drawLFO };
   if (refreshers[id]) setTimeout(refreshers[id], 50);
 }
